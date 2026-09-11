@@ -1,11 +1,8 @@
 # Maiserver
 
-This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|中二` service account into a RESTful API, with no other dependencies.
+This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|中二` service account into a RESTful API, supports low-power devices.
 
-> Currently Compatible WeChat Version: **4.1.1.8**
-
-> [!NOTE]
-> This plugin is designed to run on low-power devices (such as the Raspberry Pi), so it supports the removal of WMPF, as explained in detail below.
+> Compatible WeChat Version: **4.1.1.8**
 
 > [!TIP]
 > Maiserver is still in the very early stages; it may crash or encounter other issues. Feel free to file an issue.
@@ -36,6 +33,40 @@ But,
 
 > [!WARNING]
 > I will not be held responsible for any consequences, including permanent account suspension. Please use at your own risk.
+
+## API Endpoints
+
+Currently, all APIs are non-reentrant and block until a timeout occurs.
+
+- `/api/v1/auth/qrcode` - Generate a Player QR Code
+> [!NOTE]
+> If the Wahlap server does not respond, WeChat will stop waiting after 15 seconds.
+```json
+{
+    "code": 0,
+    "message": "Success.",
+    "data": {
+        "url": "https://wq.wahlap.net/qrcode/req/MAID ...",
+        "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 9/11 16:17",
+        "maid": "...",
+        "expires_in": 1789114620
+    }
+}
+```
+
+- `/api/v1/auth/aimetoken` - Get the token URL used to log in to the aime website.
+> [!NOTE]
+> The client must support HTTP/2.  
+> The server will Set-Cookie for the client and redirect it to https://maimai.wahlap.com/maimai-mobile/home/.
+```json
+{
+    "code": 0,
+    "message": "Success.",
+    "data": {
+        "url": "https://maimai.wahlap.com/maimai-mobile/?t=..."
+    }
+}
+```
 
 ## Installation
 
@@ -113,40 +144,6 @@ If you're running WeChat in bwrap. For example, I'm using [aur/wechat-universal-
 --ro-bind /etc/ssl/certs/ca-certificates.crt{,}
 ```
 
-## API Endpoints
-
-Currently, all APIs are non-reentrant and block until a timeout occurs.
-
-- `/api/v1/auth/qrcode` - Generate a Player QR Code
-> [!NOTE]
-> If the Wahlap server does not respond, WeChat will stop waiting after 15 seconds.
-```json
-{
-    "code": 0,
-    "message": "Success.",
-    "data": {
-        "url": "https://wq.wahlap.net/qrcode/req/MAID ...",
-        "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 9/11 16:17",
-        "maid": "...",
-        "expires_in": 1789114620
-    }
-}
-```
-
-- `/api/v1/auth/aimetoken` - Get the token URL used to log in to the aime website.
-> [!NOTE]
-> The client must support HTTP/2.  
-> The server will Set-Cookie for the client and redirect it to https://maimai.wahlap.com/maimai-mobile/home/.
-```json
-{
-    "code": 0,
-    "message": "Success.",
-    "data": {
-        "url": "https://maimai.wahlap.com/maimai-mobile/?t=..."
-    }
-}
-```
-
 ## Available Environment Variables
 
 Environment Variable | Default Value | Description
@@ -155,3 +152,7 @@ Environment Variable | Default Value | Description
 `MAISERVER_LISTEN_PORT` | `8080` | The port that the web server listen on.
 `MAISERVER_CLOUD_PROXY_DEVICE_ID` | - | Please refer to the text above; this must be set manually.
 `MAISERVER_NO_WMPF` | `0` | Setting this to a non-zero value will prevent WMPF from running.
+
+## License
+
+GPLv3
