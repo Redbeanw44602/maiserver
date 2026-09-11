@@ -1,0 +1,22 @@
+diff --git a/source/MemoryAllocator/NearMemoryAllocator.cc b/source/MemoryAllocator/NearMemoryAllocator.cc
+index 27b5cf7..067d62e 100644
+--- a/source/MemoryAllocator/NearMemoryAllocator.cc
++++ b/source/MemoryAllocator/NearMemoryAllocator.cc
+@@ -48,7 +48,7 @@ NearMemoryAllocator *NearMemoryAllocator::SharedAllocator() {
+ MemBlock *NearMemoryAllocator::allocateNearBlockFromDefaultAllocator(uint32_t size, addr_t pos, size_t search_range,
+                                                                      bool executable) {
+   addr_t min_valid_addr, max_valid_addr;
+-  min_valid_addr = pos - search_range;
++  min_valid_addr = pos >= search_range ? (pos - search_range) : 0;
+   max_valid_addr = pos + search_range;
+ 
+   auto allocateFromDefaultArena = [&](MemoryArena *arena, uint32_t size) -> addr_t {
+@@ -111,7 +111,7 @@ MemBlock *NearMemoryAllocator::allocateNearBlockFromUnusedRegion(uint32_t size,
+                                                                  bool executable) {
+ 
+   addr_t min_valid_addr, max_valid_addr;
+-  min_valid_addr = pos - search_range;
++  min_valid_addr = pos >= search_range ? (pos - search_range) : 0;
+   max_valid_addr = pos + search_range;
+ 
+   auto check_has_sufficient_memory_between_region = [&](MemRegion region, MemRegion next_region,

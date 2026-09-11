@@ -1,0 +1,86 @@
+syntax = "proto2";
+
+// custom
+message CloudProxyAuthRequest {
+  message BaseRequest {
+    optional bytes device_id = 1;
+  }
+  optional BaseRequest request = 1;
+}
+
+// custom
+message CloudProxyAuthResponse {
+  message Unk1 {
+    optional int32 unk = 1;
+  }
+  message Unk2 {
+    message Unk2 {
+      optional bytes session_info = 9;
+      optional int32 unk = 11;
+    }
+    message Unk3 {
+      optional int32 uin = 1;
+    }
+    optional Unk2 unk2 = 2;
+    optional Unk3 unk3 = 3;
+  }
+  optional Unk1 unk1 = 1;
+  optional Unk2 unk2 = 2;
+}
+
+// micromsg.BaseRequest
+message BaseRequest {
+  optional string key_type = 1;
+  optional int32 uin = 2;
+  optional string device_id = 3;
+  optional int32 val1 = 4;
+  optional string client_os = 5;
+  optional int32 val2 = 6;
+}
+
+// authorization.OauthAuthorizeReq
+message OAuthAuthorizeRequest {
+  optional BaseRequest base_request = 1;
+  optional string url = 2;
+  optional string biz_username = 3;
+  optional uint32 scene = 4;
+  optional uint32 sub_scene = 5;
+  optional bool auto_oauth = 6;
+  optional string referrer_url = 7;
+}
+
+// custom
+message CloudProxyTransferRequest {
+  optional uint32 val1 = 1;
+  optional uint32 cmd_id = 2;
+  optional string cmd_host = 3;
+  optional string cmd_url = 4;
+  optional bytes payload = 5;
+}
+
+// custom
+message CloudProxyTransferResponse {
+  optional uint32 val1 = 1;
+  optional bytes payload = 2;
+}
+
+// custom
+message OAuthAuthorizeResponse {
+  message Unk1 {
+    message Unk2 {
+      optional string unk1 = 1;
+    }
+    optional uint32 unk1 = 1;
+    optional Unk2 unk2 = 2;
+  }
+  message Unk19 {
+    optional string unk1 = 1;
+    optional string unk2 = 2;
+  }
+  optional Unk1 unk1 = 1;
+  optional string name = 4;
+  optional string avatar_url = 5;
+  optional string callback_url = 6;
+  optional uint32 unk9 = 9;
+  optional Unk19 unk19 = 19;
+}
