@@ -20,6 +20,10 @@ set_languages('c++23')
 set_toolchains('clang')
 -- set_runtimes('c++_static')
 
+if is_mode('debug') then 
+    add_defines('MAI_DEBUG')
+end 
+
 target('maiserver')
     set_kind('shared')
     add_rules('protobuf.cpp')

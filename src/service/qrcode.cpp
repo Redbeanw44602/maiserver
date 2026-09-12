@@ -24,7 +24,7 @@ static SimpleChannel channel;
 
 static const auto SendBizMenuEvent = CALLABLE_ADDR(
     void,
-    wechat::rel(0x5B96690),
+    wechat::rel(0x770DFA0),
     void*,               // this, unused
     uint32_t,            // unk
     LLVMStringNA const&, // gh_username
@@ -87,18 +87,17 @@ std::expected<MaiQRCode, MaiError> qrcode() {
 HOOK_ADDR(
     void,
     parse_newsync_messages,
-    wechat::rel(0x4A6C690),
-    void* a1,
+    wechat::rel(0x6216510),
     /* Since the std::vector structure in libc++/stdc++ is extremely similar, it
        is used directly here; perhaps a std_vector.h will be added in the
        future. */
     const std::vector<MsgItem>& items,
-    void*                       a3,
-    void*                       a4
+    void*                       a2,
+    void*                       a3
 ) {
     using PStr = ProtoString;
 
-    origin(a1, items, a3, a4);
+    origin(items, a2, a3);
 
     if (auto item = std::ranges::find_if(
             items,

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "mem/hook.h"
-
-MODULE(wechat);
-MODULE(libwmpf_host_export);
-MODULE(libilink2);
+#if MAI_DEBUG
+#define DBG(...) std::println("[maiserver:debug] " __VA_ARGS__)
+#else
+#define DBG(...) ((void)0)
+#endif
