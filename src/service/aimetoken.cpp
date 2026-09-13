@@ -10,6 +10,7 @@
 #include <tobiaslocker_base64/base64.hpp>
 
 #include "config.h"
+#include "log.h"
 #include "mem/hook.h"
 #include "mem/module.h"
 #include "mem/std_string.h"
@@ -17,6 +18,7 @@
 #include "service/aimetoken.h"
 #include "service/service.h"
 #include "util/simple_channel.h"
+#include "util/string.h"
 
 #include "micromsg.pb.h"
 
@@ -33,7 +35,7 @@ std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
     const auto GetBrowsingService        = CALLABLE(void*, GetBrowsingService);
     const auto SendCloudProxyAuthRequest = CALLABLE_ADDR(
         void*,
-        libwmpf_host_export::rel(0x1E9110),
+        libwmpf_host_export::rel(0x1EEB30),
         void*,             // this
         uint32_t,          // task_id
         const LLVMString&, // request body
@@ -75,7 +77,7 @@ std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
     auto proto_str = base64::from_base64(
-        json.at("client_auth_resp_encode").get<std::string>()
+        json.at("client_auth_resp_encode").get<std::string_view>()
     );
 
     CloudProxyAuthResponse response;
@@ -103,7 +105,9 @@ std::expected<std::vector<char>, MaiError> build_oauth_request(
     base_request->set_key_type("sessionkey");
     base_request->set_uin(uin);
     base_request->set_device_id(device_id);
-    base_request->set_val1(-227274488);
+    /* The meaning of this field is currently unknown, but it may be related to
+     * the version. Update it when adapting to the new version. */
+    base_request->set_val1(-227271415);
     base_request->set_client_os("UnifiedPCLinux");
     base_request->set_val2(0);
     std::vector<char> serialized(request.ByteSizeLong());
@@ -133,7 +137,9 @@ auto build_wpkg_header(uint32_t uin, std::string_view session_info) {
     header.set_uint64<2>(uin);
     header.set_uint64<3>(0);
     header.set_uint64<4>(0);
-    header.set_uint64<5>(459008);
+    /* The meaning of this field is currently unknown, but it may be related to
+     * the version. Update it when adapting to the new version. */
+    header.set_uint64<5>(726016);
     header.set_uint64<6>(15);
     header.set_uint64<7>(0);
     header.set_uint64<8>(0);
@@ -159,6 +165,7 @@ auto build_wpkg_header(uint32_t uin, std::string_view session_info) {
     header.set_uint64<28>(1);
     header.set_uint64<29>(1);
     header.set_uint64<30>(0);
+    header.set_uint64<31>(0);
     std::vector<char> ret(10248);
     auto              size = header.serialize(ret);
     ret.resize(size);
@@ -187,7 +194,7 @@ get_oauth_callback_url(std::string_view url) {
     const auto GetBrowsingService = CALLABLE(void*, GetBrowsingService);
     const auto SendCloudProxyTransferRequest = CALLABLE_ADDR(
         void*,
-        libwmpf_host_export::rel(0x1E9610),
+        libwmpf_host_export::rel(0x1EEFB0),
         void*,             // this
         uint32_t,          // task_id
         const LLVMString&, // request body
@@ -198,14 +205,17 @@ get_oauth_callback_url(std::string_view url) {
     if (!service) {
         return std::unexpected(MaiError::FAILED_TO_GET_BROWSING_SERVICE);
     }
+    DBG("get_oauth_callback_url called, start oauth process...");
 
     // Another device ID, related to the MAC address, which is different from
     // `g_cloud_proxy_device_id`.
-    auto device_id = CALLABLE_ADDR(LLVMStringNA*, wechat::rel(0x586FD80))();
+    auto device_id = CALLABLE_ADDR(LLVMStringNA*, wechat::rel(0x736DFD0))();
+    DBG("got another device id {}", device_id->view());
 
     auto oauth_request_or_err =
         build_oauth_request(url, device_id->view(), g_uin, true);
     if (!oauth_request_or_err) {
+        DBG("failed to build oauth request!");
         return std::unexpected(oauth_request_or_err.error());
     }
 
@@ -215,6 +225,15 @@ get_oauth_callback_url(std::string_view url) {
                        + CLOUD_PROXY_SHORTCONN_HEADER_SIZE;
     auto shortconn_header =
         build_shortconn_header(total_size, CLOUD_PROXY_TRANSFER_CMD_ID);
+    DBG("built oauth request ({}) {}",
+        oauth_request_or_err->size(),
+        string::hex(*oauth_request_or_err));
+    DBG("built wpkg header ({}) {}",
+        wpkg_header.size(),
+        string::hex(wpkg_header));
+    DBG("built shortconn header ({}) {}",
+        shortconn_header.size(),
+        string::hex(shortconn_header));
 
     CloudProxyTransferRequest request;
     request.set_val1(1901);
@@ -227,6 +246,7 @@ get_oauth_callback_url(std::string_view url) {
     payload->append_range(wpkg_header);
     payload->append_range(oauth_request);
 
+    DBG("start to serialize cloud proxy transfer request");
     std::string serialized;
     if (!request.SerializeToString(&serialized)) {
         return std::unexpected(MaiError::FAILED_TO_SERIALIZE_REQUEST_PROTOBUF);
@@ -238,6 +258,7 @@ get_oauth_callback_url(std::string_view url) {
         {"req_body_encode", base64::to_base64(serialized)},
         {"timeout_ms",      30000                        }
     };
+    DBG("send cloud proxy transfer task {}", cloud_transfer_task.dump());
 
     SendCloudProxyTransferRequest(
         service,
@@ -255,8 +276,9 @@ get_oauth_callback_url(std::string_view url) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
     auto proto_str = base64::from_base64(
-        json.at("ilink_response_encode").get<std::string>()
+        json.at("ilink_response_encode").get<std::string_view>()
     );
+    DBG("got valid ilink response, now deserialize");
 
     CloudProxyTransferResponse response;
     if (!response.ParseFromString(proto_str)) {
@@ -266,16 +288,18 @@ get_oauth_callback_url(std::string_view url) {
         || response.payload().size() < CLOUD_PROXY_SHORTCONN_HEADER_SIZE) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
-    auto resp_span = std::span(*response.mutable_payload());
+    auto resp_span = std::span(response.payload())
+                         .subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE);
+    DBG("got cloud proxy transfer response {}", string::hex(resp_span));
 
     WPKGHeader header;
-    if (header.deserialize(resp_span.subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE))
-        != 0) {
+    if (header.deserialize(resp_span) != 0
+        || header.size() > resp_span.size()) {
         return std::unexpected(MaiError::FAILED_TO_PARSE_RESPONSE_WPKG);
     }
+    DBG("parsed wpkg header size {}", header.size());
 
-    auto compressed_proto =
-        resp_span.subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE + header.size());
+    auto        compressed_proto = resp_span.subspan(header.size());
     std::string decompressed_proto(1024, '\0');
     auto        decompressed_size = LZ4_decompress_safe(
         compressed_proto.data(),
@@ -286,8 +310,10 @@ get_oauth_callback_url(std::string_view url) {
     if (decompressed_size >= 0) {
         decompressed_proto.resize(decompressed_size);
     } else {
+        DBG("lz4 decompress failed, result = {}", decompressed_size);
         return std::unexpected(MaiError::FAILED_TO_DECOMPRESS_RESPONSE);
     }
+    DBG("decompressed oauth response {}", string::hex(decompressed_proto));
 
     OAuthAuthorizeResponse oauth_response;
     if (!oauth_response.ParseFromString(decompressed_proto)) {
@@ -304,38 +330,52 @@ std::expected<AimeToken, MaiError> aimetoken() {
     if (auto fail = check(channel)) {
         return fail;
     }
+    DBG("called aimetoken(), start oauth process...");
     auto oauth_url = cpr::Get(
         cpr::Url{WEIXIN_WAHLAP_AIME_URL},
         cpr::Redirect{false},
         cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0}
     );
+    DBG("got oauth url from wahlap, status = {}, text = {}",
+        oauth_url.status_code,
+        oauth_url.text);
 
     if (!oauth_url.header.contains("location")) {
+        DBG("walhap response does not contains location header!");
         return std::unexpected(MaiError::EXPECT_REDIRECT);
     }
 
+    DBG("ok, start getting cloud_proxy_session_info");
     if (g_cloud_proxy_session_info.empty()) {
         if (auto session_info = get_cloud_proxy_session_info()) {
+            DBG("got valid session info {}", string::hex(*session_info));
             g_cloud_proxy_session_info = *session_info;
         } else {
             return std::unexpected(session_info.error());
         }
     }
 
+    DBG("now start getting oauth callback url...");
     auto url_or_err = get_oauth_callback_url(oauth_url.header.at("location"));
     if (!url_or_err) {
         return std::unexpected(url_or_err.error());
     }
 
+    DBG("server responses valid callback_url = {}, now send request",
+        *url_or_err);
     auto callback_url = cpr::Get(
         cpr::Url{*url_or_err},
         cpr::Redirect{false},
         cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0}
     );
+    DBG("wahlap responses, status = {}, text = {}",
+        callback_url.status_code,
+        callback_url.text);
     if (!callback_url.header.contains("location")) {
         return std::unexpected(MaiError::EXPECT_REDIRECT);
     }
 
+    DBG("success!");
     return AimeToken{callback_url.header.at("location")};
 }
 
@@ -344,11 +384,14 @@ std::expected<AimeToken, MaiError> aimetoken() {
 HOOK_ADDR_LAZY(
     void,
     run_cloud_proxy_callback,
-    libwmpf_host_export::rel(0x1E5D80),
+    libwmpf_host_export::rel(0x1EB6B0),
     void*             a1,
     uint32_t          task_id,
     const LLVMString& content
 ) {
+    DBG("run_cloud_proxy_callback, task_id = {}, content = {}",
+        task_id,
+        content.view());
     if (task_id == MAGIC_TASK_ID) {
         service::channel.post_message(std::string(content.view()));
         return;
@@ -359,7 +402,7 @@ HOOK_ADDR_LAZY(
 HOOK_ADDR_LAZY(
     void*,
     insert_cloud_proxy_callback,
-    libwmpf_host_export::rel(0x1E92D0),
+    libwmpf_host_export::rel(0x1EECF0),
     void*    a1,
     uint32_t task_id,
     void*    a3
@@ -370,17 +413,25 @@ HOOK_ADDR_LAZY(
 HOOK_ADDR_LAZY(
     void,
     init_browser,
-    libwmpf_host_export::rel(0x261EF0),
+    libwmpf_host_export::rel(0x26D8C0),
     void*,
     void*
 ) {}
 
-HOOK_ADDR(void*, load_wmpf_host_export, wechat::rel(0x64BEB10)) {
+/* Dobby does not allow the same address to be hooked multiple times; we
+ * plan to address this issue in the future. */
+#if MAI_DEBUG
+#include "maidebug_helper.inc"
+#endif
+
+HOOK_ADDR(void*, load_wmpf_host_export, wechat::rel(0x8525910)) {
     auto ret = origin();
     HOOK_ADDR_INSTALL(run_cloud_proxy_callback);
     HOOK_ADDR_INSTALL(insert_cloud_proxy_callback);
-    /* Dobby does not allow the same address to be hooked multiple times; we
-     * plan to address this issue in the future. */
+#if MAI_DEBUG
+    HOOK_ADDR_INSTALL(send_cloud_proxy_transfer_request);
+    HOOK_ADDR_INSTALL(send_cloud_proxy_auth_request);
+#endif
     if (g_no_wmpf_mode) {
         HOOK_ADDR_INSTALL(init_browser);
     }

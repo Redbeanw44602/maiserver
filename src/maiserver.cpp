@@ -62,7 +62,7 @@ void endpoint_aimetoken(
     }
 }
 
-HOOK(int, main, int argc, char** argv) {
+HOOK_ADDR(int, main, wechat::rel(0x44FEA10), int argc, char** argv) {
     std::println("Hello maiserver!");
 
     auto address = std::getenv("MAISERVER_LISTEN_ADDRESS");
@@ -143,7 +143,7 @@ HOOK(int, main, int argc, char** argv) {
     return origin(argc, argv);
 }
 
-HOOK_ADDR(void, set_uin, wechat::rel(0x6D7D1C0), uint32_t uin) {
+HOOK_ADDR(void, set_uin, wechat::rel(0x8E1B800), uint32_t uin) {
     g_uin = uin;
     return origin(uin);
 }
