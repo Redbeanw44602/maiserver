@@ -77,7 +77,7 @@ std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
     auto proto_str = base64::from_base64(
-        json.at("client_auth_resp_encode").get<std::string>()
+        json.at("client_auth_resp_encode").get<std::string_view>()
     );
 
     CloudProxyAuthResponse response;
@@ -105,7 +105,9 @@ std::expected<std::vector<char>, MaiError> build_oauth_request(
     base_request->set_key_type("sessionkey");
     base_request->set_uin(uin);
     base_request->set_device_id(device_id);
-    base_request->set_val1(-227274488);
+    /* The meaning of this field is currently unknown, but it may be related to
+     * the version. Update it when adapting to the new version. */
+    base_request->set_val1(-227271415);
     base_request->set_client_os("UnifiedPCLinux");
     base_request->set_val2(0);
     std::vector<char> serialized(request.ByteSizeLong());
@@ -135,7 +137,9 @@ auto build_wpkg_header(uint32_t uin, std::string_view session_info) {
     header.set_uint64<2>(uin);
     header.set_uint64<3>(0);
     header.set_uint64<4>(0);
-    header.set_uint64<5>(459008);
+    /* The meaning of this field is currently unknown, but it may be related to
+     * the version. Update it when adapting to the new version. */
+    header.set_uint64<5>(726016);
     header.set_uint64<6>(15);
     header.set_uint64<7>(0);
     header.set_uint64<8>(0);
@@ -161,6 +165,7 @@ auto build_wpkg_header(uint32_t uin, std::string_view session_info) {
     header.set_uint64<28>(1);
     header.set_uint64<29>(1);
     header.set_uint64<30>(0);
+    header.set_uint64<31>(0);
     std::vector<char> ret(10248);
     auto              size = header.serialize(ret);
     ret.resize(size);
@@ -271,7 +276,7 @@ get_oauth_callback_url(std::string_view url) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
     auto proto_str = base64::from_base64(
-        json.at("ilink_response_encode").get<std::string>()
+        json.at("ilink_response_encode").get<std::string_view>()
     );
     DBG("got valid ilink response, now deserialize");
 
@@ -283,18 +288,18 @@ get_oauth_callback_url(std::string_view url) {
         || response.payload().size() < CLOUD_PROXY_SHORTCONN_HEADER_SIZE) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
-    auto resp_span = std::span(*response.mutable_payload());
+    auto resp_span = std::span(response.payload())
+                         .subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE);
     DBG("got cloud proxy transfer response {}", string::hex(resp_span));
 
     WPKGHeader header;
-    if (header.deserialize(resp_span.subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE))
-        != 0) {
+    if (header.deserialize(resp_span) != 0
+        || header.size() > resp_span.size()) {
         return std::unexpected(MaiError::FAILED_TO_PARSE_RESPONSE_WPKG);
     }
     DBG("parsed wpkg header size {}", header.size());
 
-    auto compressed_proto =
-        resp_span.subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE + header.size());
+    auto        compressed_proto = resp_span.subspan(header.size());
     std::string decompressed_proto(1024, '\0');
     auto        decompressed_size = LZ4_decompress_safe(
         compressed_proto.data(),
@@ -384,7 +389,7 @@ HOOK_ADDR_LAZY(
     uint32_t          task_id,
     const LLVMString& content
 ) {
-    DBG("RunCloudProxyCallback, task_id = {}, content = {}",
+    DBG("run_cloud_proxy_callback, task_id = {}, content = {}",
         task_id,
         content.view());
     if (task_id == MAGIC_TASK_ID) {
@@ -402,23 +407,7 @@ HOOK_ADDR_LAZY(
     uint32_t task_id,
     void*    a3
 ) {
-    DBG("InsertCloudProxyCallback, task_id = {}", task_id);
     return task_id == MAGIC_TASK_ID ? nullptr : origin(a1, task_id, a3);
-}
-
-HOOK_ADDR_LAZY(
-    void*,
-    send_cloud_proxy_transfer_request,
-    libwmpf_host_export::rel(0x1EEFB0),
-    void*             a1,
-    uint32_t          task_id,
-    const LLVMString& content,
-    void*             callback
-) {
-    DBG("SendCloudProxyTransferRequest, task_id = {}, content = {}",
-        task_id,
-        content.view());
-    return origin(a1, task_id, content, callback);
 }
 
 HOOK_ADDR_LAZY(
@@ -429,15 +418,20 @@ HOOK_ADDR_LAZY(
     void*
 ) {}
 
+/* Dobby does not allow the same address to be hooked multiple times; we
+ * plan to address this issue in the future. */
+#if MAI_DEBUG
+#include "maidebug_helper.inc"
+#endif
+
 HOOK_ADDR(void*, load_wmpf_host_export, wechat::rel(0x8525910)) {
     auto ret = origin();
     HOOK_ADDR_INSTALL(run_cloud_proxy_callback);
     HOOK_ADDR_INSTALL(insert_cloud_proxy_callback);
 #if MAI_DEBUG
     HOOK_ADDR_INSTALL(send_cloud_proxy_transfer_request);
+    HOOK_ADDR_INSTALL(send_cloud_proxy_auth_request);
 #endif
-    /* Dobby does not allow the same address to be hooked multiple times; we
-     * plan to address this issue in the future. */
     if (g_no_wmpf_mode) {
         HOOK_ADDR_INSTALL(init_browser);
     }
