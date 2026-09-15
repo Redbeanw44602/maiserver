@@ -13,6 +13,15 @@
 
 namespace mai::util::string {
 
+template <size_t N>
+struct CompileTime {
+    char buf[N]{};
+
+    constexpr CompileTime(const char (&str)[N]) { std::copy_n(str, N, buf); }
+
+    constexpr operator std::string_view() const { return {buf, N - 1}; }
+};
+
 inline std::string_view
 middle(std::string_view text, std::string_view left, std::string_view right) {
     const auto begin = text.find(left);
