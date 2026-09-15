@@ -12,13 +12,10 @@ add_requires('cpr')
 add_repositories('local-repo repo')
 
 set_allowedplats('linux')
-set_allowedarchs('x86_64')
+set_allowedarchs('x86_64', 'arm64')
 
 set_warnings('all', 'extra')
 set_languages('c++23')
-
-set_toolchains('clang')
--- set_runtimes('c++_static')
 
 if is_mode('debug') then 
     add_defines('MAI_DEBUG')
