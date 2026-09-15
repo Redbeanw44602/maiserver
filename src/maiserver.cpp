@@ -9,8 +9,7 @@
 
 #include "config.h"
 #include "error.h"
-#include "mem/hook.h"
-#include "mem/module.h"
+#include "mem/function.h"
 #include "service/aimetoken.h"
 #include "service/qrcode.h"
 #include "util/http_server.h"
@@ -19,6 +18,7 @@
 using namespace mai;
 using namespace mai::util;
 using namespace mai::service;
+using namespace mai::mem;
 
 using HttpServer    = SimpleWeb::Server<SimpleWeb::HTTP>;
 using HttpResponder = Responder<HttpServer::Response, MaiError>;
@@ -62,7 +62,7 @@ void endpoint_aimetoken(
     }
 }
 
-HOOK_ADDR(int, main, wechat::rel(0x44FEA10), int argc, char** argv) {
+HOOK(main, int argc, char** argv) {
     std::println("Hello maiserver!");
 
     auto address = std::getenv("MAISERVER_LISTEN_ADDRESS");
@@ -141,9 +141,9 @@ HOOK_ADDR(int, main, wechat::rel(0x44FEA10), int argc, char** argv) {
     server_thread.detach();
 
     return origin(argc, argv);
-}
+};
 
-HOOK_ADDR(void, set_uin, wechat::rel(0x8E1B800), uint32_t uin) {
+HOOK(set_uin, uint32_t uin) {
     g_uin = uin;
     return origin(uin);
 }

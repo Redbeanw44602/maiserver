@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "mem/hook.h"
-#include "mem/module.h"
+#include "mem/function.h"
 #include "mem/std_string.h"
 
 namespace mai::mem {
@@ -15,15 +14,10 @@ namespace mai::mem {
 class WPKGHeader {
 public:
     explicit WPKGHeader(uint32_t unk_1 = 1) {
-        const auto Ctor =
-            CALLABLE_ADDR(void*, libilink2::rel(0x556F60), void*, uint32_t);
-        Ctor(object_, unk_1);
+        wpkg_header_ctor(object_, unk_1);
     }
 
-    ~WPKGHeader() {
-        const auto Dtor = CALLABLE_ADDR(void*, libilink2::rel(0x556F90), void*);
-        Dtor(object_);
-    }
+    ~WPKGHeader() { wpkg_header_dtor(object_); }
 
     WPKGHeader(const WPKGHeader&)             = delete;
     WPKGHeader& operator=(const WPKGHeader&)  = delete;
@@ -32,54 +26,27 @@ public:
 
     template <uint32_t Key>
     void set_uint64(uint64_t value) {
-        const auto SetU64 = CALLABLE_ADDR(
-            void*,
-            libilink2::rel(0x557000),
-            void*,
-            uint32_t,
-            uint64_t
-        );
-        SetU64(object_, Key, value);
+        wpkg_header_set_u64(object_, Key, value);
     }
 
     template <uint32_t Key>
     void set_string(std::string_view value) {
-        const auto SetStdString = CALLABLE_ADDR(
-            void*,
-            libilink2::rel(0x557370),
-            void*,
-            uint32_t,
-            LLVMStringNA const&
-        );
-        SetStdString(object_, Key, value);
+        wpkg_header_set_string(object_, Key, value);
     }
 
 #if MAI_DEBUG
     template <uint32_t Key>
     std::optional<uint64_t> get_uint64() const {
-        const auto GetU64 = CALLABLE_ADDR(
-            int,
-            libilink2::rel(0x557450),
-            const void*,
-            uint32_t,
-            uint64_t*
-        );
         uint64_t out;
-        return GetU64(object_, Key, &out) == 0 ? std::make_optional(out)
-                                               : std::nullopt;
+        return wpkg_header_get_u64(object_, Key, &out) == 0
+                 ? std::make_optional(out)
+                 : std::nullopt;
     }
 
     template <uint32_t Key>
     std::optional<std::string> get_string() const {
-        const auto GetStdString = CALLABLE_ADDR(
-            int,
-            libilink2::rel(0x5574A0),
-            const void*,
-            uint32_t,
-            LLVMStringNA*
-        );
         LLVMStringNA out;
-        return GetStdString(object_, Key, &out) == 0
+        return wpkg_header_get_string(object_, Key, &out) == 0
                  ? std::make_optional(std::string(out.view()))
                  : std::nullopt;
     }
@@ -96,27 +63,12 @@ public:
     }
 
     uint64_t deserialize(std::span<const char> in) {
-        const auto Deserialize = CALLABLE_ADDR(
-            uint64_t,
-            libilink2::rel(0x557CA0),
-            void*,
-            const char*,
-            uint32_t
-        );
-        return Deserialize(object_, in.data(), in.size());
+        return wpkg_header_deserialize(object_, in.data(), in.size());
     }
 
     uint32_t serialize(std::span<char> out) const {
-        const auto Serialize = CALLABLE_ADDR(
-            void*,
-            libilink2::rel(0x557C80),
-            const void*,
-            char*,
-            uint32_t*,
-            uint32_t
-        );
         uint32_t out_size{0};
-        Serialize(object_, out.data(), &out_size, out.size());
+        wpkg_header_serialize(object_, out.data(), &out_size, out.size());
         return out_size;
     }
 

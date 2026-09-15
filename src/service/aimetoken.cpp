@@ -11,8 +11,7 @@
 
 #include "config.h"
 #include "log.h"
-#include "mem/hook.h"
-#include "mem/module.h"
+#include "mem/function.h"
 #include "mem/std_string.h"
 #include "mem/wpkg_header.h"
 #include "service/aimetoken.h"
@@ -32,17 +31,7 @@ namespace mai::service {
 static SimpleChannel channel;
 
 std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
-    const auto GetBrowsingService        = CALLABLE(void*, GetBrowsingService);
-    const auto SendCloudProxyAuthRequest = CALLABLE_ADDR(
-        void*,
-        libwmpf_host_export::rel(0x1EEB30),
-        void*,             // this
-        uint32_t,          // task_id
-        const LLVMString&, // request body
-        void*              // callback
-    );
-
-    auto service = GetBrowsingService();
+    auto service = get_browsing_service();
     if (!service) {
         return std::unexpected(MaiError::FAILED_TO_GET_BROWSING_SERVICE);
     }
@@ -61,11 +50,11 @@ std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
         {"timeout_ms",      10000                        }
     };
 
-    SendCloudProxyAuthRequest(
+    send_cloud_proxy_auth_request(
         service,
         MAGIC_TASK_ID,
         LLVMString(cloud_auth_task.dump()),
-        nullptr
+        nullptr // callback
     );
     auto result = channel.wait_for_message(10s);
     if (!result) {
@@ -191,17 +180,7 @@ auto build_shortconn_header(uint32_t packet_size, uint32_t cmd_id) {
 
 std::expected<std::string, MaiError>
 get_oauth_callback_url(std::string_view url) {
-    const auto GetBrowsingService = CALLABLE(void*, GetBrowsingService);
-    const auto SendCloudProxyTransferRequest = CALLABLE_ADDR(
-        void*,
-        libwmpf_host_export::rel(0x1EEFB0),
-        void*,             // this
-        uint32_t,          // task_id
-        const LLVMString&, // request body
-        void*              // callback
-    );
-
-    auto service = GetBrowsingService();
+    auto service = get_browsing_service();
     if (!service) {
         return std::unexpected(MaiError::FAILED_TO_GET_BROWSING_SERVICE);
     }
@@ -209,7 +188,7 @@ get_oauth_callback_url(std::string_view url) {
 
     // Another device ID, related to the MAC address, which is different from
     // `g_cloud_proxy_device_id`.
-    auto device_id = CALLABLE_ADDR(LLVMStringNA*, wechat::rel(0x736DFD0))();
+    auto device_id = get_device_id();
     DBG("got another device id {}", device_id->view());
 
     auto oauth_request_or_err =
@@ -260,11 +239,11 @@ get_oauth_callback_url(std::string_view url) {
     };
     DBG("send cloud proxy transfer task {}", cloud_transfer_task.dump());
 
-    SendCloudProxyTransferRequest(
+    send_cloud_proxy_transfer_request(
         service,
         MAGIC_TASK_ID,
         LLVMString(cloud_transfer_task.dump()),
-        nullptr
+        nullptr // callback
     );
     auto result = channel.wait_for_message(30s);
     if (!result) {
@@ -381,10 +360,8 @@ std::expected<AimeToken, MaiError> aimetoken() {
 
 } // namespace mai::service
 
-HOOK_ADDR_LAZY(
-    void,
+HOOK_DELAYED(
     run_cloud_proxy_callback,
-    libwmpf_host_export::rel(0x1EB6B0),
     void*             a1,
     uint32_t          task_id,
     const LLVMString& content
@@ -399,10 +376,8 @@ HOOK_ADDR_LAZY(
     origin(a1, task_id, content);
 }
 
-HOOK_ADDR_LAZY(
-    void*,
+HOOK_DELAYED(
     insert_cloud_proxy_callback,
-    libwmpf_host_export::rel(0x1EECF0),
     void*    a1,
     uint32_t task_id,
     void*    a3
@@ -410,13 +385,7 @@ HOOK_ADDR_LAZY(
     return task_id == MAGIC_TASK_ID ? nullptr : origin(a1, task_id, a3);
 }
 
-HOOK_ADDR_LAZY(
-    void,
-    init_browser,
-    libwmpf_host_export::rel(0x26D8C0),
-    void*,
-    void*
-) {}
+HOOK_DELAYED(init_browser, void*, void*) {}
 
 /* Dobby does not allow the same address to be hooked multiple times; we
  * plan to address this issue in the future. */
@@ -424,16 +393,16 @@ HOOK_ADDR_LAZY(
 #include "maidebug_helper.inc"
 #endif
 
-HOOK_ADDR(void*, load_wmpf_host_export, wechat::rel(0x8525910)) {
+HOOK(load_wmpf_host_export) {
     auto ret = origin();
-    HOOK_ADDR_INSTALL(run_cloud_proxy_callback);
-    HOOK_ADDR_INSTALL(insert_cloud_proxy_callback);
+    HOOK_INSTALL(run_cloud_proxy_callback);
+    HOOK_INSTALL(insert_cloud_proxy_callback);
 #if MAI_DEBUG
-    HOOK_ADDR_INSTALL(send_cloud_proxy_transfer_request);
-    HOOK_ADDR_INSTALL(send_cloud_proxy_auth_request);
+    HOOK_INSTALL(send_cloud_proxy_transfer_request);
+    HOOK_INSTALL(send_cloud_proxy_auth_request);
 #endif
     if (g_no_wmpf_mode) {
-        HOOK_ADDR_INSTALL(init_browser);
+        HOOK_INSTALL(init_browser);
     }
     return ret;
 }

@@ -10,8 +10,7 @@
 
 #include "config.h"
 #include "log.h"
-#include "mem/hook.h"
-#include "mem/module.h"
+#include "mem/function.h"
 #include "mem/std_string.h"
 #include "mem/wpkg_header.h"
 #include "util/string.h"
@@ -22,10 +21,8 @@ using namespace mai;
 using namespace mai::mem;
 using namespace mai::util;
 
-HOOK_ADDR_LAZY(
-    void*,
+HOOK_DELAYED(
     send_cloud_proxy_transfer_request,
-    libwmpf_host_export::rel(0x1EEFB0),
     void*             a1,
     uint32_t          task_id,
     const LLVMString& content,
@@ -104,10 +101,8 @@ RETURN:
     return origin(a1, task_id, content, callback);
 }
 
-HOOK_ADDR_LAZY(
-    void*,
+HOOK_DELAYED(
     send_cloud_proxy_auth_request,
-    libwmpf_host_export::rel(0x1EEB30),
     void*             a1,
     uint32_t          task_id,
     const LLVMString& content,

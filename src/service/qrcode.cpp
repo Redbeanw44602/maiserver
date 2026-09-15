@@ -6,8 +6,8 @@
 
 #include <pugixml.hpp>
 
-#include "mem/hook.h"
-#include "mem/module.h"
+#include "mem/function.h"
+// #include "mem/module.h" note, crash clangd?
 #include "mem/struct.h"
 #include "service/qrcode.h"
 #include "service/service.h"
@@ -22,21 +22,11 @@ namespace mai::service {
 
 static SimpleChannel channel;
 
-static const auto SendBizMenuEvent = CALLABLE_ADDR(
-    void,
-    wechat::rel(0x770DFA0),
-    void*,               // this, unused
-    uint32_t,            // unk
-    LLVMStringNA const&, // gh_username
-    uint32_t,            // menu_id
-    LLVMStringNA const&  // menu_key
-);
-
 std::expected<MaiQRCode, MaiError> qrcode() {
     if (auto fail = check(channel)) {
         return fail;
     }
-    SendBizMenuEvent(
+    send_biz_menu_event(
         nullptr,
         1,
         LLVMStringNA(SERVICE_ACCOUNT_GH_USERNAME),
@@ -84,10 +74,8 @@ std::expected<MaiQRCode, MaiError> qrcode() {
 
 } // namespace mai::service
 
-HOOK_ADDR(
-    void,
+HOOK(
     parse_newsync_messages,
-    wechat::rel(0x6216510),
     /* Since the std::vector structure in libc++/stdc++ is extremely similar, it
        is used directly here; perhaps a std_vector.h will be added in the
        future. */

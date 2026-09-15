@@ -12,77 +12,146 @@
 
 #include <dobby.h>
 
-#define SYM(sym) (DobbySymbolResolver(nullptr, sym))
+#include "util/string.h"
 
-#define CALLABLE(ret_t, sym, args_t...)                                        \
-    CALLABLE_ADDR(ret_t, (uintptr_t)(SYM(#sym)), args_t)
+namespace mai::mem {
 
-#define CALLABLE_ADDR(ret_t, addr, args_t...)                                  \
-    ((ret_t (*)(args_t))((void*)(addr)))
+namespace detail {
 
-#define HOOK(ret_t, sym, args_t...)                                            \
-    HOOK_ADDR(ret_t, sym, (uintptr_t)(SYM(#sym)), args_t)
+template <typename FunctionResolver, typename Sig>
+struct Function;
 
-#define HOOK_ADDR_BASE(ret_t, name, addr, args_t...)                           \
-    class HookRegistrar_##name {                                               \
-    public:                                                                    \
-        explicit HookRegistrar_##name() {                                      \
-            if (DobbyHook(                                                     \
-                    (void*)(addr),                                             \
-                    (dobby_dummy_func_t)detour,                                \
-                    (dobby_dummy_func_t*)&origin                               \
-                )                                                              \
-                != 0) {                                                        \
-                std::println("Failed to hook: {} ({:#x}).", #name, (addr));    \
-            }                                                                  \
-        }                                                                      \
-        static ret_t (*origin)(args_t);                                        \
-        static ret_t detour(args_t);                                           \
-    };                                                                         \
-    ret_t (*HookRegistrar_##name::origin)(args_t) = nullptr;
+template <typename FunctionResolver, typename Ret, typename... Args>
+struct Function<FunctionResolver, Ret(Args...)> {
+    using return_type        = Ret;
+    using function_signature = Ret(Args...);
 
-#define HOOK_ADDR_INSTALL(name) HookRegistrar_##name hookRegistrar_##name;
-#define HOOK_ADDR_STATIC_INSTALL(name) static HOOK_ADDR_INSTALL(name)
+    static uintptr_t address() { return FunctionResolver::address(); }
 
-#define HOOK_ADDR(ret_t, name, addr, args_t...)                                \
-    HOOK_ADDR_BASE(ret_t, name, addr, args_t)                                  \
-    HOOK_ADDR_STATIC_INSTALL(name)                                             \
-    ret_t HookRegistrar_##name::detour(args_t)
+    template <typename... CallArgs>
+    static Ret operator()(CallArgs&&... args) {
+        return reinterpret_cast<function_signature*>(address())(
+            std::forward<CallArgs>(args)...
+        );
+    }
+};
 
-#define HOOK_ADDR_LAZY(ret_t, name, addr, args_t...)                           \
-    HOOK_ADDR_BASE(ret_t, name, addr, args_t)                                  \
-    ret_t HookRegistrar_##name::detour(args_t)
-
-#define MODULE(module_name)                                                    \
-    namespace module_name {                                                    \
-    inline uintptr_t base() { return get_module_base(#module_name); }          \
-    inline uintptr_t rel(ptrdiff_t offset) { return base() + offset; }         \
+template <util::string::CompileTime Module>
+struct ModuleBase {
+    static uintptr_t get() {
+        static auto cached = find_base();
+        return cached;
     }
 
-inline uintptr_t _get_module_base(std::string_view module_name) {
-    auto* fp = fopen("/proc/self/maps", "r");
-    if (!fp) return 0;
+private:
+    static uintptr_t find_base() {
+        auto* fp = fopen("/proc/self/maps", "r");
+        if (!fp) return 0;
 
-    char line[1024];
+        char line[1024];
 
-    while (fgets(line, sizeof(line), fp)) {
-        if (strstr(line, module_name.data())) {
-            uintptr_t addr;
-            sscanf(line, "%lx-", &addr);
-            fclose(fp);
-            return addr;
+        while (fgets(line, sizeof(line), fp)) {
+            if (strstr(line, Module.buf)) {
+                uintptr_t addr;
+                sscanf(line, "%lx-", &addr);
+                fclose(fp);
+                return addr;
+            }
         }
-    }
 
-    fclose(fp);
-    return 0;
-}
+        std::println("Failed to get base address of {}!", Module.buf);
 
-inline uintptr_t get_module_base(std::string_view module_name) {
-    auto ret = _get_module_base(module_name);
-    if (!ret) {
-        std::println("Failed to get base address of {}.", module_name);
+        fclose(fp);
         return 0;
     }
-    return ret;
-}
+};
+
+template <util::string::CompileTime Module, uintptr_t Offset>
+struct ModuleOffsetResolver {
+    static uintptr_t address() {
+        static auto cached = ModuleBase<Module>::get() + Offset;
+        return cached;
+    }
+};
+
+template <util::string::CompileTime Symbol>
+struct SymbolResolver {
+    static uintptr_t address() {
+        static auto cached = reinterpret_cast<uintptr_t>(
+            DobbySymbolResolver(nullptr, Symbol.buf)
+        );
+        return cached;
+    }
+};
+
+} // namespace detail
+
+template <
+    util::string::CompileTime Module,
+    uintptr_t                 Offset,
+    typename Signature>
+using DefineFunction =
+    detail::Function<detail::ModuleOffsetResolver<Module, Offset>, Signature>;
+
+template <util::string::CompileTime Symbol, typename Signature>
+using ResolveFunction =
+    detail::Function<detail::SymbolResolver<Symbol>, Signature>;
+
+} // namespace mai::mem
+
+#define HOOK_NS(x)             namespace x
+#define HOOK_NOREF_TYPE(x)     std::remove_reference_t<decltype(x)>
+#define HOOK_NESTED_TYPE(x, t) typename HOOK_NOREF_TYPE(x)::t
+
+#define HOOK_AUTOGEN    mai::mem::autogen
+#define HOOK_AUTOGEN_NS HOOK_NS(HOOK_AUTOGEN)
+
+#define HOOK_REGISTRAR(function) HOOK_AUTOGEN::_##function::Registrar
+
+#define HOOK_DEFINE(function, ...)                                             \
+    HOOK_AUTOGEN_NS {                                                          \
+        HOOK_NS(_##function) {                                                 \
+            using function_signature =                                         \
+                HOOK_NESTED_TYPE(function, function_signature);                \
+            struct Registrar {                                                 \
+                Registrar() {                                                  \
+                    auto address = HOOK_NOREF_TYPE(function)::address();       \
+                    if (DobbyHook(                                             \
+                            (void*)address,                                    \
+                            (dobby_dummy_func_t)detour,                        \
+                            (dobby_dummy_func_t*)&origin                       \
+                        )                                                      \
+                        != 0) {                                                \
+                        std::println(                                          \
+                            "Failed to hook: {} ({:#x}).",                     \
+                            #function,                                         \
+                            address                                            \
+                        );                                                     \
+                    }                                                          \
+                }                                                              \
+                static function_signature* origin;                             \
+                static function_signature  detour;                             \
+            };                                                                 \
+            function_signature* Registrar::origin = nullptr;                   \
+        }                                                                      \
+    }
+
+#define HOOK_DETOUR(function, ...)                                             \
+    HOOK_NESTED_TYPE(function, return_type)                                    \
+    HOOK_REGISTRAR(function)::detour(__VA_ARGS__)
+
+#define HOOK_AUTO_INSTALL(function)                                            \
+    HOOK_AUTOGEN_NS {                                                          \
+        HOOK_NS(_##function) { HOOK_REGISTRAR(function) installed; }           \
+    }
+
+#define HOOK_INSTALL(function) HOOK_REGISTRAR(function) installed_##function;
+
+#define HOOK(function, ...)                                                    \
+    HOOK_DEFINE(function, __VA_ARGS__)                                         \
+    HOOK_AUTO_INSTALL(function)                                                \
+    HOOK_DETOUR(function, __VA_ARGS__)
+
+#define HOOK_DELAYED(function, ...)                                            \
+    HOOK_DEFINE(function, __VA_ARGS__)                                         \
+    HOOK_DETOUR(function, __VA_ARGS__)
