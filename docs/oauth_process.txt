@@ -1,0 +1,42 @@
+# OAuth Process (Incomplete)
+
+## Version: WeChat for Linux, x86_64, 4.1.1.8
+
+- WeChatAppEx:0x8170850 ToAuthorization
+  - Construct OauthAuthorizeReq, BaseRequest
+  - Serialize protobuf message
+- WeChatAppEx:0x80C8D90 ILinkServiceInstanceImpl, SendAppRequest
+- WeChatAppEx:0x8400570
+  - Send serialized protobuf message through Mojo IPC (msgId = 0x623057F1)
+- WeChatAppEx:0x84032C0 Mojo IPC, Message Dispatcher
+- WeChatAppEx:0x86B1D20 ILinkManager, SendAppRequest
+  - Construct IlinkRequestInfo
+  - Serialize protobuf message
+- WeChatAppEx:libilink2:0xE2650, vtable for ilink::NetworkManagerNoSTLImpl+0x28
+- WeChatAppEx:libilink2:0x127730, vtable for ilink::NetworkManagerImpl+0x28
+- WeChatAppEx:libilink_network:0x2589B0, vtable for IlinkNetworkImpl+0xA8
+  - Up to this point, the IlinkRequestInfo protobuf message has not changed
+- WeChatAppEx:libilink_network:0x259C10, RunTaskCheckLogic
+- WeChatAppEx:libilink_network:0x275660, PackRequest
+  - Extract the payload (OauthAuthorizeReq) from IlinkRequestInfo
+- WeChatAppEx:libilink_network:0x23BA20, LZ4_compress
+  - Use LZ4 to compress OAuthAuthorizeReq
+- WeChatAppEx:libilink_network:0x2D96F0, Req2Buf
+  - Add wechat's proprietary header data structure
+... unknown ...
+- wechat:libwmpf_host_export:0x1E9610, SendCloudProxyTransferRequest
+  - The payload received here is the base64-encoded result of Req2Buf
+- wechat:0x661CAE0
+  - Sender?
+... unknown ...
+- WeChatAppEx:0x?, OnAuthorization
+
+# Unused funcs signature record
+
+- WeChatAppEx:0x4D63660 Protobuf.SerializeToString(this, LLVMString& out)
+- WeChatAppEx:0x8400570 UNK(this, uint32_t cmd_id, const LLVMString& cmd_url, const LLVMString& payload, void* callback)
+- WeChatAppEx:0x86B1D20 UNK(this, uint32_t req_id, const char* cmd_url, const LLVMString& payload, void* callback)
+- WeChatAppEx:libilink2:0xE2650 UNK(this, uint32_t task_id, const char* payload, uint32_t size)
+- WeChatAppEx:libilink_network:0x2589B0 UNK(this, uint32_t task_id, const char* payload, uint32_t size)
+- WeChatAppEx:libilink_network:0x275660 PackRequest(this, uint32_t crypt_algo, void*, LLVMString*, const char* payload, uint32_t len, owl::v7::buffer* out, bool passthrough, void*)
+- WeChatAppEx:libilink_network:0x23BA20 LZ4_compress(const char* payload, uint32_t len, char** out, uint32_t* out_len)
