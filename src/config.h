@@ -20,7 +20,7 @@ inline bool        g_no_wmpf_mode{false};
 
 } // namespace shared_variables
 
-constexpr uint32_t MAGIC_TASK_ID          = 114514'1919810;
+constexpr uint32_t MAGIC_TASK_ID          = 114514'1919;
 constexpr auto     DEFAULT_LISTEN_ADDRESS = "0.0.0.0";
 constexpr auto     DEFAULT_LISTEN_PORT    = 8080;
 

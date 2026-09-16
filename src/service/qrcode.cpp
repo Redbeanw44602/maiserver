@@ -7,7 +7,6 @@
 #include <pugixml.hpp>
 
 #include "mem/function.h"
-// #include "mem/module.h" note, crash clangd?
 #include "mem/struct.h"
 #include "service/qrcode.h"
 #include "service/service.h"

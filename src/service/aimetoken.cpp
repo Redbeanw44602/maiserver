@@ -4,10 +4,10 @@
  * This file is part of the Maibox open source project.
  */
 
+#include <base64.hpp>
 #include <cpr/cpr.h>
 #include <lz4.h>
 #include <nlohmann/json.hpp>
-#include <tobiaslocker_base64/base64.hpp>
 
 #include "config.h"
 #include "log.h"

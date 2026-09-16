@@ -1,8 +1,7 @@
 # VSCode
 .vscode
 
-# Xmake
-.xmake
+# Meson
 build
 
 # Clangd

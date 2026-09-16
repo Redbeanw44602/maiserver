@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://github.com/tobiaslocker/base64.git
+revision = 8d96a2a737ac1396304b1de289beb3a5ea0cb752
+depth = 1

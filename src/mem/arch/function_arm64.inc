@@ -23,13 +23,13 @@ inline DefineFunction<
 
 inline DefineFunction<
     WeChat,
-    0x89A785C, // todo, not confirmed
+    0x89A785C,
     void(uint32_t)>
     set_uin;
 
 inline DefineFunction<
     WeChat,
-    0x60AD100, // todo, not confirmed
+    0x60AD100,
     void(const std::vector<MsgItem>&, void*, void*)>
     parse_newsync_messages;
 

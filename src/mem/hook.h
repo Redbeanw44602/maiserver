@@ -10,7 +10,10 @@
 #include <cstring>
 #include <print>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvariadic-macros"
 #include <dobby.h>
+#pragma GCC diagnostic pop
 
 #include "util/string.h"
 
