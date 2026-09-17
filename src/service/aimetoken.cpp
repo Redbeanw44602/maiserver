@@ -314,10 +314,17 @@ std::expected<AimeToken, MaiError> aimetoken() {
         cpr::Url{WEIXIN_WAHLAP_AIME_URL},
         cpr::Redirect{false},
         cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0}
+#if MAI_DEBUG
+        ,
+        cpr::Verbose{true}
+#endif
     );
     DBG("got oauth url from wahlap, status = {}, text = {}",
         oauth_url.status_code,
         oauth_url.text);
+    if (oauth_url.status_code == 0) {
+        DBG("curl error: {}", oauth_url.error.message);
+    }
 
     if (!oauth_url.header.contains("location")) {
         DBG("walhap response does not contains location header!");
