@@ -1,0 +1,4 @@
+include(_slices/build)
+include(_slices/gcc)
+include(_slices/libstdc++)
+include(_slices/release)

@@ -1,8 +1,9 @@
 # VSCode
 .vscode
 
-# Meson
-build
+# Meson & Conan
+build-*
 
 # Clangd
+build
 .cache

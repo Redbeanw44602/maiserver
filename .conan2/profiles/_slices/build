@@ -1,0 +1,3 @@
+[settings]
+os={{ detect_api.detect_os() }}
+arch={{ detect_api.detect_arch() }}
