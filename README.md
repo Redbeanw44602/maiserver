@@ -2,14 +2,13 @@
 
 This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|中二` service account into a RESTful API, supports low-power devices.
 
-> Compatible WeChat Version: **4.1.13.9**
+> Compatible WeChat Version: **4.1.13.9 (x86_64, arm64)**
 
 > [!TIP]
 > Maiserver is still in the very early stages; it may crash or encounter other issues. Feel free to file an issue.
 
 ### TODOs
 
-- [ ] WeChat for Linux (arm64) support.
 - [ ] Headless mode & Docker image.
 
 ## What problem does it solve?

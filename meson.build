@@ -11,7 +11,7 @@ project(
 )
 
 supported_systems = ['linux']
-supported_archs = ['x86_64']
+supported_archs = ['x86_64', 'aarch64']
 
 current_system = host_machine.system()
 current_arch = host_machine.cpu_family()
@@ -29,9 +29,10 @@ cmake_silent_warning.append_compile_args('cpp', '-w')
 simple_web_server_opts = cmake.subproject_options()
 simple_web_server_opts.add_cmake_defines(
     {
+        # to allow subprojects to locate asio, '/conan' is specified in the build guidelines
         'CMAKE_PREFIX_PATH': meson.project_build_root() + '/conan',
         'USE_STANDALONE_ASIO': true,
-        'USE_OPENSSL': false,
+        'USE_OPENSSL': false, # we don't need https
     },
 )
 
