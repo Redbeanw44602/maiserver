@@ -18,6 +18,10 @@ class MaiserverConan(ConanFile):
     tool_requires = (
         "protobuf/7.35.0",  # noqa: RUF100
     )
+    default_options = {
+        "libcurl/*:with_nghttp2": True,
+        "libcurl/*:with_ca_fallback": True,
+    }
 
     settings = "os", "compiler", "build_type", "arch"
 
