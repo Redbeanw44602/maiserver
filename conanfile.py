@@ -6,24 +6,22 @@ from conan.tools.meson import MesonToolchain
 
 
 class MaiserverConan(ConanFile):
-    name = "maiserver"
+    name = 'maiserver'
     requires = (
-        "protobuf/7.35.0",
-        "lz4/1.10.0",
-        "nlohmann_json/3.12.0",
-        "pugixml/1.16",
-        "cpr/1.14.2",
-        "asio/1.38.2",  # cmake deps, required by subproject simple-web-server
+        'protobuf/7.35.0',
+        'lz4/1.10.0',
+        'nlohmann_json/3.12.0',
+        'pugixml/1.16',
+        'cpr/1.14.2',
+        'asio/1.38.2',  # cmake deps, required by subproject simple-web-server
     )
-    tool_requires = (
-        "protobuf/7.35.0",  # noqa: RUF100
-    )
+    tool_requires = 'protobuf/7.35.0'
     default_options = {
-        "libcurl/*:with_nghttp2": True,
-        "libcurl/*:with_ca_fallback": True,
+        'libcurl/*:with_nghttp2': True,
+        'libcurl/*:with_ca_fallback': True,
     }
 
-    settings = "os", "compiler", "build_type", "arch"
+    settings = 'os', 'compiler', 'build_type', 'arch'
 
     def validate(self):
         check_min_cppstd(self, 23)
@@ -35,7 +33,6 @@ class MaiserverConan(ConanFile):
         cmake.generate()
         meson = MesonToolchain(self)
         if cross_building(self):
-            # workaround for 'Unable to find XX'
-            meson.binaries["cmake"] = "cmake"
-            meson.binaries["pkg-config"] = "pkg-config"
+            meson.binaries['cmake'] = 'cmake'
+            meson.binaries['pkg-config'] = 'pkg-config'
         meson.generate()
