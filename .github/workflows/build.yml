@@ -1,0 +1,129 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - release
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [debug, release, minsizerel]
+        plat:
+          - name: linux / x86_64
+            toolchain: clang
+            stdlib: libstdc++
+            arch: x86_64
+            os_name: ubuntu26
+            runner: ubuntu-26.04
+          - name: linux / arm64
+            toolchain: clang
+            stdlib: libstdc++
+            arch: arm64
+            os_name: ubuntu26
+            runner: ubuntu-26.04-arm
+    name: ${{ matrix.mode }} / ${{ matrix.plat.name }}
+    runs-on: ${{ matrix.plat.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore conan cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ./.conan2/p
+          key: conan-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}-${{ matrix.mode }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: |
+            conan-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}-${{ matrix.mode }}
+
+      - name: Setup conan
+        uses: conan-io/setup-conan@v1
+        with:
+          profile_detect: false
+
+      - name: Install dependencies
+        run: |
+          conan install . -pr:a build-${{ matrix.plat.toolchain }}-${{ matrix.plat.stdlib }}-${{ matrix.mode }} -b missing -of=build/conan
+
+      - name: Configure
+        run: |
+          source build/conan/conanbuild.sh
+          meson setup build --native-file build/conan/conan_meson_native.ini
+
+      - name: Build
+        run: |
+          source build/conan/conanbuild.sh
+          meson compile -C build
+
+      - name: Strip debug info
+        if: matrix.mode != 'debug'
+        run: |
+          SOLIB="build/libmaiserver.so"
+          SOLIB_DEBUG="${SOLIB}.debug"
+          objcopy --only-keep-debug "$SOLIB" "$SOLIB_DEBUG"
+          strip -g "$SOLIB"
+          objcopy --add-gnu-debuglink="$SOLIB_DEBUG" "$SOLIB"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: maiserver-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}-${{ matrix.mode }}
+          path: |
+            build/libmaiserver.so
+            build/*.debug
+
+  upload:
+    name: upload
+    if: github.ref == 'refs/heads/release'
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: dev-nightly
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Delete all assets from release
+        run: |
+          set -e
+
+          ASSETS=$(gh release view "$RELEASE_TAG" --json assets -q '.assets[].name')
+
+          for asset in $ASSETS; do
+            gh release delete-asset "$RELEASE_TAG" "$asset" --yes
+          done
+
+      - name: Compress all artifacts
+        run: |
+          set -e
+
+          cd artifacts
+
+          for d in */; do
+            name="${d%/}"
+            echo "Compressing $name -> $name.zip"
+
+            zip -r "${name}.zip" "$name"
+            rm -rf "$name"
+          done
+
+      - name: Upload new assets to release
+        run: |
+          gh release edit "$RELEASE_TAG" --notes "snapshot https://github.com/Redbeanw44602/maiserver/commit/$GITHUB_SHA at \`$(date -u +"%Y-%m-%d %H:%M:%S UTC")\`"
+          gh release upload "$RELEASE_TAG" artifacts/* --clobber

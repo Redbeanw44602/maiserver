@@ -16,7 +16,11 @@ class MaiserverConan(ConanFile):
         'date/3.0.5',
         'asio/1.38.2',  # cmake deps, required by subproject simple-web-server
     )
-    tool_requires = 'protobuf/7.35.0'
+    tool_requires = (
+        'meson/1.10.2',
+        'cmake/4.4.2',
+        'protobuf/7.35.0',
+    )
     default_options = {
         'libcurl/*:with_nghttp2': True,
         'libcurl/*:with_ca_fallback': True,
