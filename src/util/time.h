@@ -31,7 +31,7 @@ inline std::optional<int64_t> to_timestamp(std::string_view time_str) {
 
     local_seconds      target_local;
     std::istringstream iss{full_time_str};
-    iss >> parse("%Y/%m/%d %H:%M", target_local);
+    iss >> date::parse("%Y/%m/%d %H:%M", target_local);
 
     if (iss.fail()) {
         return std::nullopt;
