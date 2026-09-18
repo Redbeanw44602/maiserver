@@ -10,14 +10,18 @@
 #include <format>
 #include <sstream>
 
+/* libc++ has not yet fully implemented P0355R7, see:
+ * https://github.com/llvm/llvm-project/issues/99982 */
+#include <date/tz.h>
+
 namespace mai::util::time {
 
 inline std::optional<int64_t> to_timestamp(std::string_view time_str) {
-    using namespace std::chrono;
+    using namespace date;
 
     auto tz = locate_zone("Asia/Shanghai");
 
-    auto sys_now   = system_clock::now();
+    auto sys_now   = std::chrono::system_clock::now();
     auto local_now = tz->to_local(sys_now);
 
     auto ymd_now      = year_month_day{floor<days>(local_now)};
@@ -45,7 +49,8 @@ inline std::optional<int64_t> to_timestamp(std::string_view time_str) {
 
     auto target_sys = tz->to_sys(target_local);
 
-    return duration_cast<seconds>(target_sys.time_since_epoch()).count();
+    return duration_cast<std::chrono::seconds>(target_sys.time_since_epoch())
+        .count();
 }
 
 } // namespace mai::util::time

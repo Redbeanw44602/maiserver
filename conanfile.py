@@ -13,6 +13,7 @@ class MaiserverConan(ConanFile):
         'nlohmann_json/3.12.0',
         'pugixml/1.16',
         'cpr/1.14.2',
+        'date/3.0.5',
         'asio/1.38.2',  # cmake deps, required by subproject simple-web-server
     )
     tool_requires = 'protobuf/7.35.0'

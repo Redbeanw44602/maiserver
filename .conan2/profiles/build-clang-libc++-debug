@@ -1,0 +1,4 @@
+include(_slices/build)
+include(_slices/clang)
+include(_slices/libc++)
+include(_slices/debug)

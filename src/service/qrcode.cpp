@@ -4,6 +4,8 @@
  * This file is part of the Maibox open source project.
  */
 
+#include <algorithm>
+
 #include <pugixml.hpp>
 
 #include "mem/function.h"

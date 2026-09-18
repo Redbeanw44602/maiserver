@@ -51,6 +51,7 @@ lz4_dep = dependency('liblz4')
 nlohmann_json_dep = dependency('nlohmann_json')
 pugixml_dep = dependency('pugixml')
 cpr_dep = dependency('cpr')
+date_dep = dependency('date')
 asio_dep = dependency('asio') # cascaded by simple-web-server
 
 if get_option('debug')
@@ -79,6 +80,7 @@ shared_library(
         base64_dep,
         pugixml_dep,
         cpr_dep,
+        date_dep,
         asio_dep,
     ],
 )
