@@ -37,9 +37,9 @@ jobs:
         with:
           path: |
             ./.conan2/p
-          key: conan-${{ matrix.plat.os_name }}-${{ hashFiles('conanfile.py') }}
+          key: conan-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}-${{ hashFiles('conanfile.py') }}
           restore-keys: |
-            conan-${{ matrix.plat.os_name }}-
+            conan-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}
 
       - name: Setup conan
         uses: conan-io/setup-conan@v1
@@ -78,7 +78,7 @@ jobs:
             build/*.debug
 
   upload:
-    name: release
+    name: upload
     if: github.ref == 'refs/heads/ci'
     needs: build
     runs-on: ubuntu-latest
