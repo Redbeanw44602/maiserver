@@ -18,14 +18,14 @@ jobs:
             toolchain: clang
             stdlib: libstdc++
             arch: x86_64
-            os_name: ubuntu22
-            runner: ubuntu-22.04
+            os_name: ubuntu26
+            runner: ubuntu-26.04
           - name: linux / arm64
             toolchain: clang
             stdlib: libstdc++
             arch: arm64
-            os_name: ubuntu22
-            runner: ubuntu-22.04-arm
+            os_name: ubuntu26
+            runner: ubuntu-26.04-arm
     name: ${{ matrix.mode }} / ${{ matrix.plat.name }}
     runs-on: ${{ matrix.plat.runner }}
     steps:
@@ -59,7 +59,7 @@ jobs:
             build/libmaiserver.so
 
   upload:
-    name: Upload to release
+    name: release
     if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
