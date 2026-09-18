@@ -22,9 +22,9 @@ endif
 
 cmake = import('cmake')
 
-cmake_silent_warning = cmake.subproject_options()
-cmake_silent_warning.append_compile_args('c', '-w')
-cmake_silent_warning.append_compile_args('cpp', '-w')
+dobby_opts = cmake.subproject_options()
+dobby_opts.append_compile_args('c', '-w')
+dobby_opts.append_compile_args('cpp', '-w')
 
 simple_web_server_opts = cmake.subproject_options()
 simple_web_server_opts.add_cmake_defines(
@@ -33,12 +33,16 @@ simple_web_server_opts.add_cmake_defines(
         'CMAKE_PREFIX_PATH': meson.project_build_root() + '/conan',
         'USE_STANDALONE_ASIO': true,
         'USE_OPENSSL': false, # we don't need https
+        'BUILD_TESTING': false,
     },
 )
 
-dobby_subproj = cmake.subproject('dobby', options: cmake_silent_warning)
+base64_opts = cmake.subproject_options()
+base64_opts.add_cmake_defines({'BASE64_ENABLE_TESTING': false})
+
+dobby_subproj = cmake.subproject('dobby', options: dobby_opts)
 simple_web_server_subproj = cmake.subproject('simple-web-server', options: simple_web_server_opts)
-base64_subproj = cmake.subproject('tobiaslocker_base64')
+base64_subproj = cmake.subproject('tobiaslocker_base64', options: base64_opts)
 
 dobby_dep = dobby_subproj.dependency('dobby_static')
 simple_web_server_dep = simple_web_server_subproj.dependency('simple-web-server')
