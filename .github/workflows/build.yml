@@ -30,12 +30,21 @@ jobs:
     runs-on: ${{ matrix.plat.runner }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Restore conan cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ./.conan2/p
+          key: conan-${{ matrix.plat.os_name }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: |
+            conan-${{ matrix.plat.os_name }}-
 
       - name: Setup conan
         uses: conan-io/setup-conan@v1
         with:
-          cache_packages: true
+          profile_detect: false
 
       - name: Install dependencies
         run: |
@@ -51,16 +60,26 @@ jobs:
           source build/conan/conanbuild.sh
           meson compile -C build
 
+      - name: Strip debug info
+        if: matrix.mode != 'debug'
+        run: |
+          SOLIB="build/libmaiserver.so"
+          SOLIB_DEBUG="${TARGET}.debug"
+          objcopy --only-keep-debug "$SOLIB" "$SOLIB_DEBUG"
+          strip -g "$SOLIB"
+          objcopy --add-gnu-debuglink="$SOLIB_DEBUG" "$SOLIB"
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: maiserver-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}-${{ matrix.mode }}
           path: |
             build/libmaiserver.so
+            build/*.debug
 
   upload:
     name: release
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/ci'
     needs: build
     runs-on: ubuntu-latest
 
@@ -73,10 +92,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
