@@ -43,6 +43,7 @@ jobs:
 
       - name: Configure
         run: |
+          source build/conan/conanbuild.sh
           meson setup build --native-file build/conan/conan_meson_native.ini
 
       - name: Build
