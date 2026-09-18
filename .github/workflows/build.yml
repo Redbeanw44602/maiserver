@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - release
-      - ci
+      - dev
   workflow_dispatch:
 
 jobs:
@@ -79,7 +79,7 @@ jobs:
 
   upload:
     name: upload
-    if: github.ref == 'refs/heads/ci'
+    if: github.ref == 'refs/heads/release'
     needs: build
     runs-on: ubuntu-latest
 
