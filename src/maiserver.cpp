@@ -4,6 +4,7 @@
  * This file is part of the Maibox open source project.
  */
 
+#include <asio/ip/address.hpp>
 #include <base64.hpp>
 
 #include "config.h"
@@ -66,7 +67,6 @@ HOOK(main, int argc, char** argv) {
 
     auto address = std::getenv("MAISERVER_LISTEN_ADDRESS");
     if (address) {
-        /* todo...
         asio::error_code ec;
         asio::ip::make_address(address, ec);
         if (!ec) {
@@ -77,7 +77,6 @@ HOOK(main, int argc, char** argv) {
             );
             address = nullptr;
         }
-        */
     }
 
     auto port = DEFAULT_LISTEN_PORT;
