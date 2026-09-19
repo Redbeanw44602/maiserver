@@ -1,5 +1,5 @@
 [wrap-file]
-directory = Dobby-0.2.0
-source_url = https://github.com/Redbeanw44602/Dobby/archive/refs/tags/v0.2.0.tar.gz
-source_filename = Dobby-0.2.0.tar.gz
-source_hash = ea385ec09a986ae07b69c08f2983462b207aa0561e09cfbedc426da2f0fac871
+directory = Dobby-0.3.0
+source_url = https://github.com/Redbeanw44602/Dobby/archive/refs/tags/v0.3.0.tar.gz
+source_filename = Dobby-0.3.0.tar.gz
+source_hash = c1ce996cc5322e101ba2473652318194cca56fd7ec58232f93c98942dc7c0aaa
