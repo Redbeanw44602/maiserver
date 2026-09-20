@@ -408,7 +408,7 @@ HOOK(load_wmpf_host_export) {
     HOOK_INSTALL(send_cloud_proxy_transfer_request);
     HOOK_INSTALL(send_cloud_proxy_auth_request);
 #endif
-    if (g_no_wmpf_mode) {
+    if (g_no_wmpf) {
         HOOK_INSTALL(init_browser);
     }
     return ret;

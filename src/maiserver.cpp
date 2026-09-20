@@ -12,6 +12,7 @@
 #include "mem/function.h"
 #include "service/aimetoken.h"
 #include "service/qrcode.h"
+#include "util/env.h"
 #include "util/http_server.h"
 #include "util/string.h"
 
@@ -62,71 +63,88 @@ void endpoint_aimetoken(
     }
 }
 
+template <typename T>
+auto environment(string::Literal name) {
+    auto result = env::get<T>(name);
+    if (!result && result.error() != MaiError::ENVIRONMENT_VARIABLE_NOT_FOUND) {
+        std::println(
+            "Invalid {} [error: \"{}\"]; use the default value.",
+            static_cast<std::string_view>(name),
+            to_string(result.error())
+        );
+    }
+    return result;
+}
+
+auto config_from_environment() {
+    // clang-format off
+    struct {
+        std::string address    = "0.0.0.0";
+        uint16_t    port       = 8080;
+        std::string device_id;
+        bool        no_wmpf    = false;
+    } config;
+
+    auto address   = environment <std::string> ("MAISERVER_LISTEN_ADDRESS");
+    auto port      = environment <uint16_t>    ("MAISERVER_LISTEN_PORT");
+    auto device_id = environment <std::string> ("MAISERVER_CLOUD_PROXY_DEVICE_ID");
+    auto no_wmpf   = environment <bool>        ("MAISERVER_NO_WMPF");
+    // clang-format on
+
+    if (address) {
+        asio::error_code ec;
+        asio::ip::make_address(*address, ec);
+        if (!ec) {
+            std::println(
+                "Invalid address '{}'; use the default value '{}'.",
+                *address,
+                config.address
+            );
+        } else {
+            config.address = *address;
+        }
+    }
+
+    if (port) {
+        config.port = *port;
+    }
+
+    if (device_id) {
+        config.device_id = base64::from_base64(*device_id);
+        if (config.device_id.size() != 32) {
+            std::println(
+                "Invalid device ID; it must be 32 bytes long and "
+                "base64-encoded."
+            );
+            config.device_id.clear();
+        }
+    }
+
+    if (no_wmpf) {
+        config.no_wmpf = *no_wmpf;
+    }
+
+    return config;
+}
+
 HOOK(main, int argc, char** argv) {
     std::println("Hello maiserver!");
 
-    auto address = std::getenv("MAISERVER_LISTEN_ADDRESS");
-    if (address) {
-        asio::error_code ec;
-        asio::ip::make_address(address, ec);
-        if (!ec) {
-            std::println(
-                "Invalid address '{}'; falling back to the default value '{}'.",
-                address,
-                DEFAULT_LISTEN_ADDRESS
-            );
-            address = nullptr;
-        }
-    }
+    auto config = config_from_environment();
 
-    auto port = DEFAULT_LISTEN_PORT;
-    if (auto port_s = std::getenv("MAISERVER_LISTEN_PORT")) {
-        auto has_err = false;
-        try {
-            port = std::stoi(port_s);
-        } catch (const std::invalid_argument&) {
-            has_err = true;
-        } catch (const std::out_of_range&) {
-            has_err = true;
-        }
-        if (has_err || (port < 0 || port > 65535)) {
-            std::println(
-                "Invalid port number {}; falling back to the default value "
-                "({}).",
-                port,
-                DEFAULT_LISTEN_PORT
-            );
-            port = DEFAULT_LISTEN_PORT;
-        }
-    }
-
-    auto device_id = std::getenv("MAISERVER_CLOUD_PROXY_DEVICE_ID");
-    if (!device_id) {
+    if (config.device_id.empty()) {
         std::println("The device ID environment variable must be set.");
         return origin(argc, argv);
     }
-    g_cloud_proxy_device_id = base64::from_base64(device_id);
-    if (g_cloud_proxy_device_id.size() != 32) {
-        std::println(
-            "Invalid device ID; it must be 32 bytes long and base64-encoded."
-        );
-        return origin(argc, argv);
-    }
-    std::println(
-        "The device ID is set to: {}",
-        string::hex(g_cloud_proxy_device_id)
-    );
 
-    if (auto no_wmpf_mode = std::getenv("MAISERVER_NO_WMPF")) {
-        if (std::string_view(no_wmpf_mode) != "0") {
-            g_no_wmpf_mode = true;
-        }
-    }
+    g_cloud_proxy_device_id = config.device_id;
+    g_no_wmpf               = config.no_wmpf;
+
+    std::println("The device ID is set to: {}", string::hex(config.device_id));
 
     HttpServer server;
-    server.config.address =
-        address != nullptr ? address : DEFAULT_LISTEN_ADDRESS;
-    server.config.port                                = port;
+    server.config.address                             = config.address;
+    server.config.port                                = config.port;
     server.resource["^/api/v1/auth/qrcode"]["GET"]    = endpoint_qrcode;
     server.resource["^/api/v1/auth/aimetoken"]["GET"] = endpoint_aimetoken;
 

@@ -16,13 +16,11 @@ inline namespace shared_variables {
 inline uint32_t    g_uin{0};
 inline std::string g_cloud_proxy_device_id;
 inline std::string g_cloud_proxy_session_info;
-inline bool        g_no_wmpf_mode{false};
+inline bool        g_no_wmpf;
 
 } // namespace shared_variables
 
-constexpr uint32_t MAGIC_TASK_ID          = 114514'1919;
-constexpr auto     DEFAULT_LISTEN_ADDRESS = "0.0.0.0";
-constexpr auto     DEFAULT_LISTEN_PORT    = 8080;
+constexpr uint32_t MAGIC_TASK_ID = 114514'1919;
 
 constexpr auto SERVICE_ACCOUNT_GH_USERNAME = "gh_6cfb73ca89e6";
 constexpr auto SERVICE_ACCOUNT_MENU_ID     = 455590723;
