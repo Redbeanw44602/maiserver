@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <expected> // IWYU pragma: export
 #include <string_view>
 
 namespace mai {

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <expected>
-
 #include "config.h"
 #include "error.h"
 #include "util/simple_channel.h"
