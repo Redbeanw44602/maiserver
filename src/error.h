@@ -30,6 +30,8 @@ enum class MaiError {
     FAILED_TO_PARSE_RESPONSE_WPKG,
     FAILED_TO_COMPRESS_REQUEST,
     FAILED_TO_DECOMPRESS_RESPONSE,
+    FAILED_TO_CONVERSION_INVALID_STR,
+    FAILED_TO_CONVERSION_OUT_OF_RANGE,
 };
 
 inline std::string_view to_string(MaiError error) {
@@ -70,6 +72,10 @@ inline std::string_view to_string(MaiError error) {
         return "Failed to compress the request.";
     case MaiError::FAILED_TO_DECOMPRESS_RESPONSE:
         return "Failed to decompress the response.";
+    case MaiError::FAILED_TO_CONVERSION_INVALID_STR:
+        return "Invalid string; cannot be converted to an integer.";
+    case MaiError::FAILED_TO_CONVERSION_OUT_OF_RANGE:
+        return "An integer overflow has been detected.";
     default:
         return "Unknown error.";
     }

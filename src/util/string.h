@@ -11,6 +11,8 @@
 #include <string>
 #include <string_view>
 
+#include "error.h"
+
 namespace mai::util::string {
 
 template <size_t N>
@@ -29,6 +31,26 @@ struct Fixed {
     consteval const char* c_str() const { return buf; }
     consteval char*       data() { return buf; }
     consteval size_t      size() { return N; }
+};
+
+class Literal {
+public:
+    template <size_t N>
+    consteval Literal(const char (&str)[N]) : data_(str),
+                                              size_(N - 1) {
+        if (N <= 0 || str[N - 1] != '\0') {
+            throw "String literals must be zero-terminated!";
+        }
+    }
+
+    constexpr operator std::string_view() const { return {data_, size_}; }
+
+    constexpr const char* c_str() const { return data_; }
+    constexpr size_t      size() { return size_; }
+
+private:
+    const char* data_;
+    size_t      size_;
 };
 
 inline std::string_view
@@ -50,11 +72,27 @@ inline std::string_view right(std::string_view text, std::string_view left) {
     return text.substr(begin + left.size());
 }
 
-inline std::string hex(std::span<const char> sv) {
+inline std::string hex(std::span<const char> str) {
     std::string ret;
-    ret.reserve(sv.size() * 2);
-    for (char c : sv) {
+    ret.reserve(str.size() * 2);
+    for (char c : str) {
         ret += std::format("{:02x}", static_cast<unsigned char>(c));
+    }
+    return ret;
+}
+
+template <std::integral T>
+inline std::expected<T, MaiError> to_integer(std::string_view str) {
+    T ret;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), ret);
+    if (ec == std::errc::invalid_argument) {
+        return std::unexpected(MaiError::FAILED_TO_CONVERSION_INVALID_STR);
+    }
+    if (ec == std::errc::result_out_of_range) {
+        return std::unexpected(MaiError::FAILED_TO_CONVERSION_OUT_OF_RANGE);
+    }
+    if (ptr != str.data() + str.size()) {
+        return std::unexpected(MaiError::FAILED_TO_CONVERSION_INVALID_STR);
     }
     return ret;
 }
