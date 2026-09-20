@@ -14,12 +14,21 @@
 namespace mai::util::string {
 
 template <size_t N>
-struct CompileTime {
+struct Fixed {
     char buf[N]{};
 
-    constexpr CompileTime(const char (&str)[N]) { std::copy_n(str, N, buf); }
+    consteval Fixed(const char (&str)[N]) {
+        if (N <= 0 || str[N - 1] != '\0') {
+            throw "String literals must be zero-terminated!";
+        }
+        std::copy_n(str, N, buf);
+    }
 
-    constexpr operator std::string_view() const { return {buf, N - 1}; }
+    consteval operator std::string_view() const { return {buf, N - 1}; }
+
+    consteval const char* c_str() const { return buf; }
+    consteval char*       data() { return buf; }
+    consteval size_t      size() { return N; }
 };
 
 inline std::string_view

@@ -39,7 +39,7 @@ struct Function<FunctionResolver, Ret(Args...)> {
     }
 };
 
-template <util::string::CompileTime Module>
+template <util::string::Fixed Module>
 struct ModuleBase {
     static uintptr_t get() {
         static auto cached = find_base();
@@ -54,7 +54,7 @@ private:
         char line[1024];
 
         while (fgets(line, sizeof(line), fp)) {
-            if (strstr(line, Module.buf)) {
+            if (strstr(line, Module.c_str())) {
                 uintptr_t addr;
                 sscanf(line, "%lx-", &addr);
                 fclose(fp);
@@ -62,14 +62,14 @@ private:
             }
         }
 
-        std::println("Failed to get base address of {}!", Module.buf);
+        std::println("Failed to get base address of {}!", Module.c_str());
 
         fclose(fp);
         return 0;
     }
 };
 
-template <util::string::CompileTime Module, uintptr_t Offset>
+template <util::string::Fixed Module, uintptr_t Offset>
 struct ModuleOffsetResolver {
     static uintptr_t address() {
         static auto cached = ModuleBase<Module>::get() + Offset;
@@ -77,11 +77,11 @@ struct ModuleOffsetResolver {
     }
 };
 
-template <util::string::CompileTime Symbol>
+template <util::string::Fixed Symbol>
 struct SymbolResolver {
     static uintptr_t address() {
         static auto cached = reinterpret_cast<uintptr_t>(
-            DobbySymbolResolver(nullptr, Symbol.buf)
+            DobbySymbolResolver(nullptr, Symbol.c_str())
         );
         return cached;
     }
@@ -89,14 +89,11 @@ struct SymbolResolver {
 
 } // namespace detail
 
-template <
-    util::string::CompileTime Module,
-    uintptr_t                 Offset,
-    typename Signature>
+template <util::string::Fixed Module, uintptr_t Offset, typename Signature>
 using DefineFunction =
     detail::Function<detail::ModuleOffsetResolver<Module, Offset>, Signature>;
 
-template <util::string::CompileTime Symbol, typename Signature>
+template <util::string::Fixed Symbol, typename Signature>
 using ResolveFunction =
     detail::Function<detail::SymbolResolver<Symbol>, Signature>;
 
