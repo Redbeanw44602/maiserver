@@ -51,6 +51,36 @@ inline DefineFunction<
     void(void*, uint32_t, const LLVMStringNA&, uint32_t, const LLVMStringNA&)>
     send_biz_menu_event;
 
+inline DefineFunction<
+    WeChat,
+    0x8195B80,
+    void(void*)>
+    init_wxocr;
+
+inline DefineFunction<
+    WeChat,
+    0x81885E0,
+    void(void*)>
+    init_wxutility;
+
+inline DefineFunction<
+    WeChat,
+    0x84C5050,
+    void(void*)>
+    init_wxplayer;
+
+inline DefineFunction<
+    WeChat,
+    0x8173590,
+    void(void*)>
+    init_wxplayer_2;
+
+inline DefineFunction<
+    WeChat,
+    0x44F9800,
+    void(void*, void*, void*, void*, void*)>
+    init_crashpad;
+
 #define BrowserHost "libwmpf_host_export" // ----------------------------------
 
 inline DefineFunction<

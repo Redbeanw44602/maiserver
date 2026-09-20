@@ -23,7 +23,7 @@ If you think offering game features on a WeChat service account isn't a problem,
 ## Pros and Cons
 
 - Supports unattended operation and provides RESTful endpoints.
-- It does not rely on WMPF, which will save a significant amount of memory.
+- It does not rely on WMPF[^1], which will save a significant amount of memory.
 - The Linux version of WeChat has difficulty detecting injection attacks, so your account is (relatively) secure.
 
 But,
@@ -69,7 +69,7 @@ Currently, all APIs are non-reentrant and block until a timeout occurs.
 
 ## Installation
 
-Recommended to compile it yourself, or download a precompiled version to obtain `libmaiserver.so`.
+Recommended to compile it yourself, or download [precompiled binaries](https://github.com/Redbeanw44602/maiserver/releases) to obtain `libmaiserver.so`.
 
 Simply set the `MAISERVER_CLOUD_PROXY_DEVICE_ID` environment variable and find a way to inject it into `wechat`; `LD_PRELOAD` is supported.
 
@@ -109,14 +109,20 @@ $ openssl rand 32 | base64 -w 0
 E2NnKfY4zFAGg3gYpqcIPdFzlMigHitX8MIyXuyVXBI=
 ```
 
-### About WMPF / Non-WMPF Mode
+### About Slim Mode
 
-WMPF (WeChat Mini Program Framework) is a Chromium-based standalone process that is launched by `libwmpf_host_export` by default.
+When slim mode is enabled, Maiserver will conserve as much memory as possible at the expense of WeChat functionality, making it suitable for running on low-power devices.
 
-Maiserver has fully reverse-engineered the OAuth request packet, so WMPF is no longer needed. With WMPF disabled, WeChat behaves like a pure Qt process, which saves a significant amount of memory (equivalent to running one less browser).
+Maiserver has fully reverse-engineered the OAuth request process, so it can run by relying solely on the WeChat main process. Currently, slim mode blocks some child processes:
+
+- WeChatAppEx (WMPF)
+- wxocr
+- wxutility
+- wxplayer
+- crashpad
 
 ```bash
-export MAISERVER_NO_WMPF=1
+export MAISERVER_SLIM=1
 ```
 
 Memory usage for reference:
@@ -135,7 +141,7 @@ If you're running WeChat in bwrap. For example, I'm using [aur/wechat-universal-
 ```bash
 --ro-bind "/path/to/maiserver/" "/tmp/maiserver"
 --setenv MAISERVER_CLOUD_PROXY_DEVICE_ID "E2NnKfY4zFAGg3gYpqcIPdFzlMigHitX8MIyXuyVXBI="
---setenv MAISERVER_NO_WMPF "1"
+--setenv MAISERVER_SLIM "1"
 --setenv LD_PRELOAD "/tmp/maiserver/libmaiserver.so"
 ```
 - Maiserver requires HTTPS (cURL)
@@ -149,9 +155,11 @@ Environment Variable | Default Value | Description
 -|-|-
 `MAISERVER_LISTEN_ADDRESS` | `0.0.0.0` | The address that the web server listen on.
 `MAISERVER_LISTEN_PORT` | `8080` | The port that the web server listen on.
-`MAISERVER_CLOUD_PROXY_DEVICE_ID` | - | Please refer to the text above; this must be set manually.
-`MAISERVER_NO_WMPF` | `0` | Setting this to a non-zero value will prevent WMPF from running.
+`MAISERVER_CLOUD_PROXY_DEVICE_ID` | - | This variable must be set manually; see above for details.
+`MAISERVER_SLIM` | `0` | Save as much memory as possible; see above for details.
 
 ## License
 
 GPLv3
+
+[^1]: WMPF (WeChat Mini Program Framework) is a Chromium-based standalone process that is launched by WeChat.

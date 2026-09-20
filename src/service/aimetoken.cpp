@@ -392,10 +392,10 @@ HOOK_DELAYED(
     return task_id == MAGIC_TASK_ID ? nullptr : origin(a1, task_id, a3);
 }
 
-HOOK_DELAYED(init_browser, void*, void*) {}
-
 /* Dobby does not allow the same address to be hooked multiple times; we
  * plan to address this issue in the future. */
+#include "maiserver_slim.inc"
+
 #if MAI_DEBUG
 #include "maidebug_helper.inc"
 #endif
@@ -408,8 +408,6 @@ HOOK(load_wmpf_host_export) {
     HOOK_INSTALL(send_cloud_proxy_transfer_request);
     HOOK_INSTALL(send_cloud_proxy_auth_request);
 #endif
-    if (g_no_wmpf) {
-        HOOK_INSTALL(init_browser);
-    }
+    HOOK_INSTALL(init_browser);
     return ret;
 }

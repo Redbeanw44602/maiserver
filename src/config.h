@@ -16,7 +16,7 @@ inline namespace shared_variables {
 inline uint32_t    g_uin{0};
 inline std::string g_cloud_proxy_device_id;
 inline std::string g_cloud_proxy_session_info;
-inline bool        g_no_wmpf;
+inline bool        g_slim{false};
 
 } // namespace shared_variables
 

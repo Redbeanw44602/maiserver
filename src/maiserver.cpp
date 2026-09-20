@@ -82,13 +82,13 @@ auto config_from_environment() {
         std::string address    = "0.0.0.0";
         uint16_t    port       = 8080;
         std::string device_id;
-        bool        no_wmpf    = false;
+        bool        slim       = false;
     } config;
 
     auto address   = environment <std::string> ("MAISERVER_LISTEN_ADDRESS");
     auto port      = environment <uint16_t>    ("MAISERVER_LISTEN_PORT");
     auto device_id = environment <std::string> ("MAISERVER_CLOUD_PROXY_DEVICE_ID");
-    auto no_wmpf   = environment <bool>        ("MAISERVER_NO_WMPF");
+    auto slim      = environment <bool>        ("MAISERVER_SLIM");
     // clang-format on
 
     if (address) {
@@ -120,8 +120,8 @@ auto config_from_environment() {
         }
     }
 
-    if (no_wmpf) {
-        config.no_wmpf = *no_wmpf;
+    if (slim) {
+        config.slim = *slim;
     }
 
     return config;
@@ -138,7 +138,7 @@ HOOK(main, int argc, char** argv) {
     }
 
     g_cloud_proxy_device_id = config.device_id;
-    g_no_wmpf               = config.no_wmpf;
+    g_slim                  = config.slim;
 
     std::println("The device ID is set to: {}", string::hex(config.device_id));
 
