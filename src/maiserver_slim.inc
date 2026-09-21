@@ -9,16 +9,16 @@
 
 using namespace mai::mem;
 
+HOOK(init_crashpad) {
+    if (!g_slim) origin();
+}
+
 HOOK_DELAYED(init_browser, void* a1, void* a2) {
     if (!g_slim) origin(a1, a2);
 }
 
-HOOK(init_wxocr, void* a1) {
-    return g_slim ? 0 : origin(a1); //
-}
-
-HOOK(init_wxutility, void* a1) {
-    if (!g_slim) origin(a1);
+HOOK(init_wxocr, void* a1) { //
+    return g_slim ? 0 : origin(a1);
 }
 
 HOOK(init_wxplayer, void* a1) {
@@ -29,6 +29,6 @@ HOOK(init_wxplayer_2, void* a1) {
     if (!g_slim) origin(a1);
 }
 
-HOOK(init_crashpad, void* a1, void* a2, void* a3, void* a4, void* a5) {
-    if (!g_slim) origin(a1, a2, a3, a4, a5);
+HOOK(init_wxutility, void* a1) {
+    if (!g_slim) origin(a1);
 }

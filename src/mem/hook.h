@@ -17,6 +17,16 @@
 
 #include "util/string.h"
 
+#include "frida-gum.h"
+
+inline __attribute__((constructor(1000))) void gum_ctor() {
+    gum_init_embedded();
+}
+
+inline __attribute__((destructor(1000))) void gum_dtor() {
+    gum_deinit_embedded();
+}
+
 namespace mai::mem {
 
 namespace detail {
@@ -115,19 +125,24 @@ using ResolveFunction =
                 HOOK_NESTED_TYPE(function, function_signature);                \
             struct Registrar {                                                 \
                 Registrar() {                                                  \
+                    auto interceptor = gum_interceptor_obtain();               \
+                    gum_interceptor_begin_transaction(interceptor);            \
                     auto address = HOOK_NOREF_TYPE(function)::address();       \
-                    if (DobbyHook(                                             \
-                            (void*)address,                                    \
-                            (dobby_dummy_func_t)detour,                        \
-                            (dobby_dummy_func_t*)&origin                       \
+                    if (gum_interceptor_replace(                               \
+                            interceptor,                                       \
+                            GSIZE_TO_POINTER(address),                         \
+                            GSIZE_TO_POINTER(detour),                          \
+                            (gpointer*)&origin,                                \
+                            NULL                                               \
                         )                                                      \
-                        != 0) {                                                \
+                        != GUM_REPLACE_OK) {                                   \
                         std::println(                                          \
                             "Failed to hook: {} ({:#x}).",                     \
                             #function,                                         \
                             address                                            \
                         );                                                     \
                     }                                                          \
+                    gum_interceptor_end_transaction(interceptor);              \
                 }                                                              \
                 static function_signature* origin;                             \
                 static function_signature  detour;                             \
@@ -142,7 +157,10 @@ using ResolveFunction =
 
 #define HOOK_AUTO_INSTALL(function)                                            \
     HOOK_AUTOGEN_NS {                                                          \
-        HOOK_NS(_##function) { HOOK_REGISTRAR(function) installed; }           \
+        HOOK_NS(_##function) {                                                 \
+            HOOK_REGISTRAR(function)                                           \
+            installed __attribute__((init_priority(2000)));                    \
+        }                                                                      \
     }
 
 #define HOOK_INSTALL(function) HOOK_REGISTRAR(function) installed_##function;

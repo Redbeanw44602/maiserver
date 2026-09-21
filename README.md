@@ -9,26 +9,26 @@ This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|�
 
 ### TODOs
 
-- [ ] Headless mode & Docker image.
+- [ ] Docker image.
 
 ## What problem does it solve?
 
 If you think offering game features on a WeChat service account isn't a problem, then you've come to the wrong place.
 
 - WeChat is actually very difficult to use, but I have no choice but to use it.
-- The WAHLAP server is sometimes unstable, but WeChat hasn't handled this very well.
+- The Wahlap server is sometimes unstable, but WeChat hasn't handled this very well.
 - AIME has been embedded in the WeChat browser, resulting in a combination of two clunky entities.
-- In addition, if you need to quickly extract `MAID` or `AIMETOKEN`, this plugin can help you (no need to capture packets).
+- If you need to quickly extract `MAID` or `AIMETOKEN`, this plugin can help you (no need to capture packets).
 
 ## Pros and Cons
 
 - Supports unattended operation and provides RESTful endpoints.
 - It does not rely on WMPF[^1], which will save a significant amount of memory.
-- The Linux version of WeChat has difficulty detecting injection attacks, so your account is (relatively) secure.
+- The Linux version of WeChat has difficulty detecting injections, so your account is (relatively) secure.
 
 But,
 - It cannot bypass WeChat's restriction that allows only one PC login at a time.
-- Its goal is to inject into WeChat, not to reverse-engineer the protocol, so it still requires running the full WeChat application.
+- Its goal is to inject into WeChat, not to reverse-engineer the protocol, so it still requires running the WeChat application.
 
 > [!WARNING]
 > I will not be held responsible for any consequences, including permanent account suspension. Please use at your own risk.
@@ -69,9 +69,9 @@ Currently, all APIs are non-reentrant and block until a timeout occurs.
 
 ## Installation
 
-Recommended to compile it yourself, or download [precompiled binaries](https://github.com/Redbeanw44602/maiserver/releases) to obtain `libmaiserver.so`.
+Recommended to compile it yourself, or download [precompiled binaries](https://github.com/Redbeanw44602/maiserver/releases).
 
-Simply set the `MAISERVER_CLOUD_PROXY_DEVICE_ID` environment variable and find a way to inject it into `wechat`; `LD_PRELOAD` is supported.
+Simply set the `MAISERVER_CLOUD_PROXY_DEVICE_ID` environment variable and find a way to inject `libmaiserver.so` into `wechat`; `LD_PRELOAD` is supported.
 
 The simplest startup command might look like this: please do not copy it directly! Refer to the text below to obtain the device ID.
 ```bash
@@ -80,7 +80,7 @@ export LD_PRELOAD='/path/to/libmaiserver.so'
 wechat
 ```
 
-If Maiserver runs successfully, it will print the following to stdout:
+If Maiserver runs successfully, it will print something like the following to stdout:
 
 ```
 Hello maiserver!
@@ -111,7 +111,7 @@ E2NnKfY4zFAGg3gYpqcIPdFzlMigHitX8MIyXuyVXBI=
 
 ### About Slim Mode
 
-When slim mode is enabled, Maiserver will conserve as much memory as possible at the expense of WeChat functionality, making it suitable for running on low-power devices.
+When slim mode is enabled, Maiserver will save as much memory as possible at the expense of WeChat functionality, making it suitable for running on low-power devices.
 
 Maiserver has fully reverse-engineered the OAuth request process, so it can run by relying solely on the WeChat main process. Currently, slim mode blocks some child processes:
 
@@ -156,7 +156,7 @@ Environment Variable | Default Value | Description
 `MAISERVER_LISTEN_ADDRESS` | `0.0.0.0` | The address that the web server listen on.
 `MAISERVER_LISTEN_PORT` | `8080` | The port that the web server listen on.
 `MAISERVER_CLOUD_PROXY_DEVICE_ID` | - | This variable must be set manually; see above for details.
-`MAISERVER_SLIM` | `0` | Save as much memory as possible; see above for details.
+`MAISERVER_SLIM` | `0` | Options for running with low memory; see above for details.
 
 ## License
 
