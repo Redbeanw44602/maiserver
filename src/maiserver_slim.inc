@@ -14,7 +14,7 @@ HOOK_DELAYED(init_browser, void* a1, void* a2) {
 }
 
 HOOK(init_wxocr, void* a1) {
-    if (!g_slim) origin(a1);
+    return g_slim ? 0 : origin(a1); //
 }
 
 HOOK(init_wxutility, void* a1) {

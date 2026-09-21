@@ -54,7 +54,7 @@ inline DefineFunction<
 inline DefineFunction<
     WeChat,
     0x8195B80,
-    void(void*)>
+    uint32_t(void*)>
     init_wxocr;
 
 inline DefineFunction<
