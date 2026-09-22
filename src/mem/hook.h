@@ -52,6 +52,7 @@ private:
         if (auto module = gum_process_find_module_by_name(Module.c_str())) {
             return gum_module_get_range(module)->base_address;
         }
+        std::println("Failed to find the base address of '{}'", Module.c_str());
         return 0;
     }
 };
@@ -64,12 +65,30 @@ struct ModuleOffsetResolver {
     }
 };
 
-template <util::string::Fixed Symbol>
+template <util::string::Fixed Module, util::string::Fixed Symbol>
 struct SymbolResolver {
     static uintptr_t address() {
-        static auto cached =
-            gum_module_find_global_export_by_name(Symbol.c_str());
+        static auto cached = find_symbol();
         return cached;
+    }
+
+private:
+    static uintptr_t find_symbol() {
+        auto module_ = gum_process_find_module_by_name(Module.c_str());
+        if (!module_) {
+            std::println("Failed to find the module: '{}'", Module.c_str());
+            return 0;
+        }
+        if (auto addr =
+                gum_module_find_export_by_name(module_, Symbol.c_str())) {
+            return addr;
+        }
+        if (auto addr =
+                gum_module_find_symbol_by_name(module_, Symbol.c_str())) {
+            return addr;
+        }
+        std::println("Failed to find the symbol: '{}'", Symbol.c_str());
+        return 0;
     }
 };
 
@@ -79,9 +98,12 @@ template <util::string::Fixed Module, uintptr_t Offset, typename Signature>
 using DefineFunction =
     detail::Function<detail::ModuleOffsetResolver<Module, Offset>, Signature>;
 
-template <util::string::Fixed Symbol, typename Signature>
+template <
+    util::string::Fixed Module,
+    util::string::Fixed Symbol,
+    typename Signature>
 using ResolveFunction =
-    detail::Function<detail::SymbolResolver<Symbol>, Signature>;
+    detail::Function<detail::SymbolResolver<Module, Symbol>, Signature>;
 
 } // namespace mai::mem
 
@@ -92,6 +114,10 @@ using ResolveFunction =
 #define CTOR_PRIORITY_LOW    __attribute__((constructor(PRIORITY_LOW)))
 #define CTOR_PRIORITY_MIDDLE __attribute__((constructor(PRIORITY_MIDDLE)))
 #define CTOR_PRIORITY_HIGH   __attribute__((constructor(PRIORITY_HIGH)))
+
+#define DTOR_PRIORITY_LOW    __attribute__((destructor(PRIORITY_LOW)))
+#define DTOR_PRIORITY_MIDDLE __attribute__((destructor(PRIORITY_MIDDLE)))
+#define DTOR_PRIORITY_HIGH   __attribute__((destructor(PRIORITY_HIGH)))
 
 #define INIT_PRIORITY_LOW    __attribute__((init_priority(PRIORITY_LOW)))
 #define INIT_PRIORITY_MIDDLE __attribute__((init_priority(PRIORITY_MIDDLE)))
@@ -148,8 +174,7 @@ using ResolveFunction =
 #define HOOK_AUTO_INSTALL(function)                                            \
     HOOK_AUTOGEN_NS {                                                          \
         HOOK_NS(_##function) {                                                 \
-            HOOK_REGISTRAR(function)                                           \
-            installed __attribute__((init_priority(2000)));                    \
+            static HOOK_REGISTRAR(function) installed INIT_PRIORITY_LOW;       \
         }                                                                      \
     }
 
@@ -165,4 +190,4 @@ using ResolveFunction =
     HOOK_DETOUR(function, __VA_ARGS__)
 
 inline CTOR_PRIORITY_HIGH void gum_init() { gum_init_embedded(); }
-inline CTOR_PRIORITY_HIGH void gum_deinit() { gum_deinit_embedded(); }
+inline DTOR_PRIORITY_HIGH void gum_deinit() { gum_deinit_embedded(); }

@@ -81,7 +81,7 @@ inline DefineFunction<
     void(void*)>
     init_wxutility;
 
-#define BrowserHost "libwmpf_host_export" // ----------------------------------
+#define BrowserHost "libwmpf_host_export.so" // ----------------------------------
 
 inline DefineFunction<
     BrowserHost,
@@ -114,11 +114,12 @@ inline DefineFunction<
     init_browser;
 
 inline ResolveFunction<
+    BrowserHost,
     "GetBrowsingService",
     void*()>
     get_browsing_service;
 
-#define ILink2 "libilink2" // -------------------------------------------------
+#define ILink2 "libilink2.so" // -------------------------------------------------
 
 inline DefineFunction<
     ILink2,
