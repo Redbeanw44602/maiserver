@@ -8,11 +8,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include <print>
+#include <print> // IWYU pragma: keep
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wvariadic-macros"
-#include <dobby.h>
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#include <frida-gum.h>
 #pragma GCC diagnostic pop
 
 #include "util/string.h"
@@ -48,23 +50,10 @@ struct ModuleBase {
 
 private:
     static uintptr_t find_base() {
-        auto* fp = fopen("/proc/self/maps", "r");
-        if (!fp) return 0;
-
-        char line[1024];
-
-        while (fgets(line, sizeof(line), fp)) {
-            if (strstr(line, Module.c_str())) {
-                uintptr_t addr;
-                sscanf(line, "%lx-", &addr);
-                fclose(fp);
-                return addr;
-            }
+        if (auto module = gum_process_find_module_by_name(Module.c_str())) {
+            return gum_module_get_range(module)->base_address;
         }
-
-        std::println("Failed to get base address of {}!", Module.c_str());
-
-        fclose(fp);
+        std::println("Failed to find the base address of '{}'", Module.c_str());
         return 0;
     }
 };
@@ -77,13 +66,26 @@ struct ModuleOffsetResolver {
     }
 };
 
-template <util::string::Fixed Symbol>
+template <util::string::Fixed Module, util::string::Fixed Symbol>
 struct SymbolResolver {
     static uintptr_t address() {
-        static auto cached = reinterpret_cast<uintptr_t>(
-            DobbySymbolResolver(nullptr, Symbol.c_str())
-        );
+        static auto cached = find_symbol();
         return cached;
+    }
+
+private:
+    static uintptr_t find_symbol() {
+        auto module_ = gum_process_find_module_by_name(Module.c_str());
+        if (!module_) {
+            std::println("Failed to find the module: '{}'", Module.c_str());
+            return 0;
+        }
+        if (auto addr = gum_module_find_export_by_name(module_, Symbol.c_str()))
+            return addr;
+        if (auto addr = gum_module_find_symbol_by_name(module_, Symbol.c_str()))
+            return addr;
+        std::println("Failed to find the symbol: '{}'", Symbol.c_str());
+        return 0;
     }
 };
 
@@ -93,41 +95,67 @@ template <util::string::Fixed Module, uintptr_t Offset, typename Signature>
 using DefineFunction =
     detail::Function<detail::ModuleOffsetResolver<Module, Offset>, Signature>;
 
-template <util::string::Fixed Symbol, typename Signature>
+template <
+    util::string::Fixed Module,
+    util::string::Fixed Symbol,
+    typename Signature>
 using ResolveFunction =
-    detail::Function<detail::SymbolResolver<Symbol>, Signature>;
+    detail::Function<detail::SymbolResolver<Module, Symbol>, Signature>;
 
 } // namespace mai::mem
+
+#define PRIORITY_LOW    3000
+#define PRIORITY_MIDDLE 2000
+#define PRIORITY_HIGH   1000
+
+#define CTOR_PRIORITY_LOW    __attribute__((constructor(PRIORITY_LOW)))
+#define CTOR_PRIORITY_MIDDLE __attribute__((constructor(PRIORITY_MIDDLE)))
+#define CTOR_PRIORITY_HIGH   __attribute__((constructor(PRIORITY_HIGH)))
+
+#define DTOR_PRIORITY_LOW    __attribute__((destructor(PRIORITY_LOW)))
+#define DTOR_PRIORITY_MIDDLE __attribute__((destructor(PRIORITY_MIDDLE)))
+#define DTOR_PRIORITY_HIGH   __attribute__((destructor(PRIORITY_HIGH)))
+
+#define INIT_PRIORITY_LOW    __attribute__((init_priority(PRIORITY_LOW)))
+#define INIT_PRIORITY_MIDDLE __attribute__((init_priority(PRIORITY_MIDDLE)))
+#define INIT_PRIORITY_HIGH   __attribute__((init_priority(PRIORITY_HIGH)))
 
 #define HOOK_NS(x)             namespace x
 #define HOOK_NOREF_TYPE(x)     std::remove_reference_t<decltype(x)>
 #define HOOK_NESTED_TYPE(x, t) typename HOOK_NOREF_TYPE(x)::t
 
-#define HOOK_AUTOGEN    mai::mem::autogen
-#define HOOK_AUTOGEN_NS HOOK_NS(HOOK_AUTOGEN)
+#define HOOK_ANONYMONUS namespace
 
-#define HOOK_REGISTRAR(function) HOOK_AUTOGEN::_##function::Registrar
+#define HOOK_REGISTRAR(function) _autogen__##function::Registrar
 
 #define HOOK_DEFINE(function, ...)                                             \
-    HOOK_AUTOGEN_NS {                                                          \
-        HOOK_NS(_##function) {                                                 \
+    HOOK_ANONYMONUS {                                                          \
+        HOOK_NS(_autogen__##function) {                                        \
             using function_signature =                                         \
                 HOOK_NESTED_TYPE(function, function_signature);                \
             struct Registrar {                                                 \
                 Registrar() {                                                  \
-                    auto address = HOOK_NOREF_TYPE(function)::address();       \
-                    if (DobbyHook(                                             \
-                            (void*)address,                                    \
-                            (dobby_dummy_func_t)detour,                        \
-                            (dobby_dummy_func_t*)&origin                       \
-                        )                                                      \
-                        != 0) {                                                \
+                    auto address     = HOOK_NOREF_TYPE(function)::address();   \
+                    auto interceptor = gum_interceptor_obtain();               \
+                    /* TRANSACTION BEGIN */                                    \
+                    gum_interceptor_begin_transaction(interceptor);            \
+                    auto result = gum_interceptor_replace_fast(                \
+                        interceptor,                                           \
+                        GSIZE_TO_POINTER(address),                             \
+                        GSIZE_TO_POINTER(detour),                              \
+                        (gpointer*)&origin,                                    \
+                        NULL                                                   \
+                    );                                                         \
+                    if (result != GUM_REPLACE_OK) {                            \
                         std::println(                                          \
-                            "Failed to hook: {} ({:#x}).",                     \
+                            "Failed to hook: {} ({:#x}), error = {}",          \
                             #function,                                         \
-                            address                                            \
+                            address,                                           \
+                            static_cast<int>(result)                           \
                         );                                                     \
                     }                                                          \
+                    /* TRANSACTION END */                                      \
+                    gum_interceptor_end_transaction(interceptor);              \
                 }                                                              \
                 static function_signature* origin;                             \
                 static function_signature  detour;                             \
@@ -141,8 +169,10 @@ using ResolveFunction =
     HOOK_REGISTRAR(function)::detour(__VA_ARGS__)
 
 #define HOOK_AUTO_INSTALL(function)                                            \
-    HOOK_AUTOGEN_NS {                                                          \
-        HOOK_NS(_##function) { HOOK_REGISTRAR(function) installed; }           \
+    HOOK_ANONYMONUS {                                                          \
+        HOOK_NS(_autogen__##function) {                                        \
+            static HOOK_REGISTRAR(function) installed INIT_PRIORITY_LOW;       \
+        }                                                                      \
     }
 
 #define HOOK_INSTALL(function) HOOK_REGISTRAR(function) installed_##function;
@@ -155,3 +185,8 @@ using ResolveFunction =
 #define HOOK_DELAYED(function, ...)                                            \
     HOOK_DEFINE(function, __VA_ARGS__)                                         \
     HOOK_DETOUR(function, __VA_ARGS__)
+
+inline CTOR_PRIORITY_HIGH void gum_init() { gum_init_embedded(); }
+
+/* TODO: Causes a SEGV in `gum_interceptor_deinit` ... IDK WHY
+inline DTOR_PRIORITY_HIGH void gum_deinit() { gum_deinit_embedded(); } */

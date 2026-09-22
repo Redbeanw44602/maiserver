@@ -8,6 +8,7 @@ from conan.tools.meson import MesonToolchain
 class MaiserverConan(ConanFile):
     name = 'maiserver'
     requires = (
+        'frida-gum/17.18.0',
         'protobuf/7.35.0',
         'lz4/1.10.0',
         'nlohmann_json/3.12.0',

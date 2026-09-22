@@ -53,15 +53,15 @@ inline DefineFunction<
 
 inline DefineFunction<
     WeChat,
-    0x8195B80,
-    uint32_t(void*)>
-    init_wxocr;
+    0x45B9220,
+    void()>
+    init_crashpad;
 
 inline DefineFunction<
     WeChat,
-    0x81885E0,
-    void(void*)>
-    init_wxutility;
+    0x8195B80,
+    uint32_t(void*)>
+    init_wxocr;
 
 inline DefineFunction<
     WeChat,
@@ -77,11 +77,11 @@ inline DefineFunction<
 
 inline DefineFunction<
     WeChat,
-    0x44F9800,
-    void(void*, void*, void*, void*, void*)>
-    init_crashpad;
+    0x81885E0,
+    void(void*)>
+    init_wxutility;
 
-#define BrowserHost "libwmpf_host_export" // ----------------------------------
+#define BrowserHost "libwmpf_host_export.so" // ----------------------------------
 
 inline DefineFunction<
     BrowserHost,
@@ -114,11 +114,12 @@ inline DefineFunction<
     init_browser;
 
 inline ResolveFunction<
+    BrowserHost,
     "GetBrowsingService",
     void*()>
     get_browsing_service;
 
-#define ILink2 "libilink2" // -------------------------------------------------
+#define ILink2 "libilink2.so" // -------------------------------------------------
 
 inline DefineFunction<
     ILink2,
