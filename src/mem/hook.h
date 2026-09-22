@@ -11,8 +11,9 @@
 #include <print> // IWYU pragma: keep
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnested-anon-types"
-#pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <frida-gum.h>
 #pragma GCC diagnostic pop
 
@@ -79,14 +80,10 @@ private:
             std::println("Failed to find the module: '{}'", Module.c_str());
             return 0;
         }
-        if (auto addr =
-                gum_module_find_export_by_name(module_, Symbol.c_str())) {
+        if (auto addr = gum_module_find_export_by_name(module_, Symbol.c_str()))
             return addr;
-        }
-        if (auto addr =
-                gum_module_find_symbol_by_name(module_, Symbol.c_str())) {
+        if (auto addr = gum_module_find_symbol_by_name(module_, Symbol.c_str()))
             return addr;
-        }
         std::println("Failed to find the symbol: '{}'", Symbol.c_str());
         return 0;
     }
