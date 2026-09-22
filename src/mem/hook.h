@@ -124,14 +124,13 @@ using ResolveFunction =
 #define HOOK_NOREF_TYPE(x)     std::remove_reference_t<decltype(x)>
 #define HOOK_NESTED_TYPE(x, t) typename HOOK_NOREF_TYPE(x)::t
 
-#define HOOK_AUTOGEN    mai::mem::autogen
-#define HOOK_AUTOGEN_NS HOOK_NS(HOOK_AUTOGEN)
+#define HOOK_ANONYMONUS namespace
 
-#define HOOK_REGISTRAR(function) HOOK_AUTOGEN::_##function::Registrar
+#define HOOK_REGISTRAR(function) _autogen__##function::Registrar
 
 #define HOOK_DEFINE(function, ...)                                             \
-    HOOK_AUTOGEN_NS {                                                          \
-        HOOK_NS(_##function) {                                                 \
+    HOOK_ANONYMONUS {                                                          \
+        HOOK_NS(_autogen__##function) {                                        \
             using function_signature =                                         \
                 HOOK_NESTED_TYPE(function, function_signature);                \
             struct Registrar {                                                 \
@@ -140,18 +139,19 @@ using ResolveFunction =
                     auto interceptor = gum_interceptor_obtain();               \
                     /* TRANSACTION BEGIN */                                    \
                     gum_interceptor_begin_transaction(interceptor);            \
-                    if (gum_interceptor_replace(                               \
-                            interceptor,                                       \
-                            GSIZE_TO_POINTER(address),                         \
-                            GSIZE_TO_POINTER(detour),                          \
-                            (gpointer*)&origin,                                \
-                            NULL                                               \
-                        )                                                      \
-                        != GUM_REPLACE_OK) {                                   \
+                    auto result = gum_interceptor_replace_fast(                \
+                        interceptor,                                           \
+                        GSIZE_TO_POINTER(address),                             \
+                        GSIZE_TO_POINTER(detour),                              \
+                        (gpointer*)&origin,                                    \
+                        NULL                                                   \
+                    );                                                         \
+                    if (result != GUM_REPLACE_OK) {                            \
                         std::println(                                          \
-                            "Failed to hook: {} ({:#x}).",                     \
+                            "Failed to hook: {} ({:#x}), error = {}",          \
                             #function,                                         \
-                            address                                            \
+                            address,                                           \
+                            static_cast<int>(result)                           \
                         );                                                     \
                     }                                                          \
                     /* TRANSACTION END */                                      \
@@ -169,8 +169,8 @@ using ResolveFunction =
     HOOK_REGISTRAR(function)::detour(__VA_ARGS__)
 
 #define HOOK_AUTO_INSTALL(function)                                            \
-    HOOK_AUTOGEN_NS {                                                          \
-        HOOK_NS(_##function) {                                                 \
+    HOOK_ANONYMONUS {                                                          \
+        HOOK_NS(_autogen__##function) {                                        \
             static HOOK_REGISTRAR(function) installed INIT_PRIORITY_LOW;       \
         }                                                                      \
     }
@@ -187,4 +187,6 @@ using ResolveFunction =
     HOOK_DETOUR(function, __VA_ARGS__)
 
 inline CTOR_PRIORITY_HIGH void gum_init() { gum_init_embedded(); }
-inline DTOR_PRIORITY_HIGH void gum_deinit() { gum_deinit_embedded(); }
+
+/* TODO: Causes a SEGV in `gum_interceptor_deinit` ... IDK WHY
+inline DTOR_PRIORITY_HIGH void gum_deinit() { gum_deinit_embedded(); } */

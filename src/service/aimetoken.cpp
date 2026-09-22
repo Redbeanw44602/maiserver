@@ -392,8 +392,8 @@ HOOK_DELAYED(
     return task_id == MAGIC_TASK_ID ? nullptr : origin(a1, task_id, a3);
 }
 
-/* Dobby does not allow the same address to be hooked multiple times; we
- * plan to address this issue in the future. */
+/* frida-gum does not allow the same address to be hooked multiple times; we
+ * plan to address this issue in the future */
 #include "maiserver_slim.inc"
 
 #if MAI_DEBUG
