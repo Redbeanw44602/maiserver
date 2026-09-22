@@ -8,28 +8,15 @@
 
 #include <cstdio>
 #include <cstring>
-#include <print>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wvariadic-macros"
-#include <dobby.h>
-#pragma GCC diagnostic pop
+#include <print> // IWYU pragma: keep
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnested-anon-types"
 #pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
-#include "frida-gum.h"
+#include <frida-gum.h>
 #pragma GCC diagnostic pop
 
 #include "util/string.h"
-
-inline __attribute__((constructor(1000))) void gum_ctor() {
-    gum_init_embedded();
-}
-
-inline __attribute__((destructor(1000))) void gum_dtor() {
-    gum_deinit_embedded();
-}
 
 namespace mai::mem {
 
@@ -62,23 +49,9 @@ struct ModuleBase {
 
 private:
     static uintptr_t find_base() {
-        auto* fp = fopen("/proc/self/maps", "r");
-        if (!fp) return 0;
-
-        char line[1024];
-
-        while (fgets(line, sizeof(line), fp)) {
-            if (strstr(line, Module.c_str())) {
-                uintptr_t addr;
-                sscanf(line, "%lx-", &addr);
-                fclose(fp);
-                return addr;
-            }
+        if (auto module = gum_process_find_module_by_name(Module.c_str())) {
+            return gum_module_get_range(module)->base_address;
         }
-
-        std::println("Failed to get base address of {}!", Module.c_str());
-
-        fclose(fp);
         return 0;
     }
 };
@@ -94,9 +67,8 @@ struct ModuleOffsetResolver {
 template <util::string::Fixed Symbol>
 struct SymbolResolver {
     static uintptr_t address() {
-        static auto cached = reinterpret_cast<uintptr_t>(
-            DobbySymbolResolver(nullptr, Symbol.c_str())
-        );
+        static auto cached =
+            gum_module_find_global_export_by_name(Symbol.c_str());
         return cached;
     }
 };
@@ -112,6 +84,18 @@ using ResolveFunction =
     detail::Function<detail::SymbolResolver<Symbol>, Signature>;
 
 } // namespace mai::mem
+
+#define PRIORITY_LOW    3000
+#define PRIORITY_MIDDLE 2000
+#define PRIORITY_HIGH   1000
+
+#define CTOR_PRIORITY_LOW    __attribute__((constructor(PRIORITY_LOW)))
+#define CTOR_PRIORITY_MIDDLE __attribute__((constructor(PRIORITY_MIDDLE)))
+#define CTOR_PRIORITY_HIGH   __attribute__((constructor(PRIORITY_HIGH)))
+
+#define INIT_PRIORITY_LOW    __attribute__((init_priority(PRIORITY_LOW)))
+#define INIT_PRIORITY_MIDDLE __attribute__((init_priority(PRIORITY_MIDDLE)))
+#define INIT_PRIORITY_HIGH   __attribute__((init_priority(PRIORITY_HIGH)))
 
 #define HOOK_NS(x)             namespace x
 #define HOOK_NOREF_TYPE(x)     std::remove_reference_t<decltype(x)>
@@ -129,9 +113,10 @@ using ResolveFunction =
                 HOOK_NESTED_TYPE(function, function_signature);                \
             struct Registrar {                                                 \
                 Registrar() {                                                  \
+                    auto address     = HOOK_NOREF_TYPE(function)::address();   \
                     auto interceptor = gum_interceptor_obtain();               \
+                    /* TRANSACTION BEGIN */                                    \
                     gum_interceptor_begin_transaction(interceptor);            \
-                    auto address = HOOK_NOREF_TYPE(function)::address();       \
                     if (gum_interceptor_replace(                               \
                             interceptor,                                       \
                             GSIZE_TO_POINTER(address),                         \
@@ -146,6 +131,7 @@ using ResolveFunction =
                             address                                            \
                         );                                                     \
                     }                                                          \
+                    /* TRANSACTION END */                                      \
                     gum_interceptor_end_transaction(interceptor);              \
                 }                                                              \
                 static function_signature* origin;                             \
@@ -177,3 +163,6 @@ using ResolveFunction =
 #define HOOK_DELAYED(function, ...)                                            \
     HOOK_DEFINE(function, __VA_ARGS__)                                         \
     HOOK_DETOUR(function, __VA_ARGS__)
+
+inline CTOR_PRIORITY_HIGH void gum_init() { gum_init_embedded(); }
+inline CTOR_PRIORITY_HIGH void gum_deinit() { gum_deinit_embedded(); }

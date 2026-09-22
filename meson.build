@@ -22,10 +22,6 @@ endif
 
 cmake = import('cmake')
 
-dobby_opts = cmake.subproject_options()
-dobby_opts.append_compile_args('c', '-w')
-dobby_opts.append_compile_args('cpp', '-w')
-
 simple_web_server_opts = cmake.subproject_options()
 simple_web_server_opts.add_cmake_defines(
     {
@@ -40,11 +36,9 @@ simple_web_server_opts.add_cmake_defines(
 base64_opts = cmake.subproject_options()
 base64_opts.add_cmake_defines({'BASE64_ENABLE_TESTING': false})
 
-dobby_subproj = cmake.subproject('dobby', options: dobby_opts)
 simple_web_server_subproj = cmake.subproject('simple-web-server', options: simple_web_server_opts)
 base64_subproj = cmake.subproject('tobiaslocker_base64', options: base64_opts)
 
-dobby_dep = dobby_subproj.dependency('dobby_static')
 simple_web_server_dep = simple_web_server_subproj.dependency('simple-web-server')
 base64_dep = base64_subproj.dependency('base64')
 frida_gum_dep = dependency('frida-gum')
@@ -74,7 +68,6 @@ shared_library(
     include_directories: includes,
     dependencies: [
         micromsg_dep,
-        dobby_dep,
         simple_web_server_dep,
         lz4_dep,
         nlohmann_json_dep,

@@ -1,7 +1,8 @@
+import os
+
 from conan import ConanFile
 from conan.tools.files import get, copy
 from conan.errors import ConanInvalidConfiguration
-import os
 
 
 class FridaGumRecipe(ConanFile):
