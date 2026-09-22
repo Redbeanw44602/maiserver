@@ -47,6 +47,7 @@ base64_subproj = cmake.subproject('tobiaslocker_base64', options: base64_opts)
 dobby_dep = dobby_subproj.dependency('dobby_static')
 simple_web_server_dep = simple_web_server_subproj.dependency('simple-web-server')
 base64_dep = base64_subproj.dependency('base64')
+frida_gum_dep = dependency('frida-gum')
 lz4_dep = dependency('liblz4')
 nlohmann_json_dep = dependency('nlohmann_json')
 pugixml_dep = dependency('pugixml')
@@ -82,5 +83,6 @@ shared_library(
         cpr_dep,
         date_dep,
         asio_dep,
+        frida_gum_dep,
     ],
 )

@@ -15,9 +15,13 @@
 #include <dobby.h>
 #pragma GCC diagnostic pop
 
-#include "util/string.h"
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnested-anon-types"
+#pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
 #include "frida-gum.h"
+#pragma GCC diagnostic pop
+
+#include "util/string.h"
 
 inline __attribute__((constructor(1000))) void gum_ctor() {
     gum_init_embedded();
