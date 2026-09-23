@@ -6,6 +6,7 @@ on:
       - release
       - dev
   workflow_dispatch:
+  pull_request:
 
 jobs:
   build:
@@ -48,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          ./scripts/export_recipes.sh
+          ./recipes/export.sh
           conan install . -pr:a build-${{ matrix.plat.toolchain }}-${{ matrix.plat.stdlib }}-${{ matrix.mode }} -b missing -of=build/conan
 
       - name: Configure
