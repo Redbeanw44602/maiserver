@@ -5,13 +5,13 @@
  */
 
 #include <asio/ip/address.hpp>
-#include <base64.hpp>
 
 #include "config.h"
 #include "error.h"
 #include "mem/function.h"
 #include "service/aimetoken.h"
 #include "service/qrcode.h"
+#include "util/base64.h"
 #include "util/env.h"
 #include "util/http_server.h"
 #include "util/string.h"
@@ -110,13 +110,14 @@ auto config_from_environment() {
     }
 
     if (device_id) {
-        config.device_id = base64::from_base64(*device_id);
-        if (config.device_id.size() != 32) {
+        device_id = base64::decode(*device_id);
+        if (!device_id || device_id->size() != 32) {
             std::println(
                 "Invalid device ID; it must be 32 bytes long and "
                 "base64-encoded."
             );
-            config.device_id.clear();
+        } else {
+            config.device_id = *device_id;
         }
     }
 

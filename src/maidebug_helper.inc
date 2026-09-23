@@ -4,7 +4,6 @@
  * This file is part of the Maibox open source project.
  */
 
-#include <base64.hpp>
 #include <lz4.h>
 #include <nlohmann/json.hpp>
 
@@ -13,6 +12,7 @@
 #include "mem/function.h"
 #include "mem/std_string.h"
 #include "mem/wpkg_header.h"
+#include "util/base64.h"
 #include "util/string.h"
 
 #include "micromsg.pb.h"
@@ -31,12 +31,12 @@ HOOK_DELAYED(
     DBG("send_cloud_proxy_transfer_request, task_id = {}, content = {}",
         task_id,
         content.view());
-    std::string               protobuf;
-    CloudProxyTransferRequest request;
-    std::span<const char>     req_span;
-    WPKGHeader                header;
-    std::string               decompressed_proto(1024, '\0');
-    int                       decompressed_size;
+    std::expected<std::string, MaiError> protobuf;
+    CloudProxyTransferRequest            request;
+    std::span<const char>                req_span;
+    WPKGHeader                           header;
+    std::string                          decompressed_proto(1024, '\0');
+    int                                  decompressed_size;
     // clang-format off
     auto iterate_wpkg = []<uint32_t... Keys>(std::integer_sequence<uint32_t, Keys...>, const WPKGHeader& header) {
         ([&]() {
@@ -53,15 +53,19 @@ HOOK_DELAYED(
     try {
         auto json = nlohmann::json::parse(content.view());
         if (json.contains("req_body_encode")) {
-            protobuf = base64::from_base64(
+            protobuf = base64::decode(
                 json.at("req_body_encode").get<std::string_view>()
             );
+            if (!protobuf) {
+                DBG("failed to decode base64: {}", to_string(protobuf.error()));
+                goto RETURN;
+            }
         }
     } catch (const nlohmann::json::exception& e) {
         DBG("failed to parse json: {}", e.what());
         goto RETURN;
     }
-    if (!request.ParseFromString(protobuf)) {
+    if (!request.ParseFromString(*protobuf)) {
         DBG("failed to parse request {}!", task_id);
         goto RETURN;
     }

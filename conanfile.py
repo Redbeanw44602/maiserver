@@ -13,6 +13,7 @@ class MaiserverConan(ConanFile):
         'lz4/1.10.0',
         'nlohmann_json/3.12.0',
         'pugixml/1.16',
+        'base64/0.5.2',
         'cpr/1.14.2',
         'date/3.0.5',
         'asio/1.38.2',  # cmake deps, required by subproject simple-web-server

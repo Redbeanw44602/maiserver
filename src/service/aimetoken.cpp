@@ -4,7 +4,6 @@
  * This file is part of the Maibox open source project.
  */
 
-#include <base64.hpp>
 #include <cpr/cpr.h>
 #include <lz4.h>
 #include <nlohmann/json.hpp>
@@ -16,6 +15,7 @@
 #include "mem/wpkg_header.h"
 #include "service/aimetoken.h"
 #include "service/service.h"
+#include "util/base64.h"
 #include "util/simple_channel.h"
 #include "util/string.h"
 
@@ -44,10 +44,10 @@ std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
         return std::unexpected(MaiError::FAILED_TO_SERIALIZE_REQUEST_PROTOBUF);
     }
     nlohmann::json cloud_auth_task{
-        {"cloud_task_id",   MAGIC_TASK_ID                },
-        {"long_polling",    false                        },
-        {"req_body_encode", base64::to_base64(serialized)},
-        {"timeout_ms",      10000                        }
+        {"cloud_task_id",   MAGIC_TASK_ID             },
+        {"long_polling",    false                     },
+        {"req_body_encode", base64::encode(serialized)},
+        {"timeout_ms",      10000                     }
     };
 
     send_cloud_proxy_auth_request(
@@ -65,12 +65,15 @@ std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
         || !json.at("client_auth_resp_encode").is_string()) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
-    auto proto_str = base64::from_base64(
+    auto proto_str = base64::decode(
         json.at("client_auth_resp_encode").get<std::string_view>()
     );
+    if (!proto_str) {
+        return proto_str;
+    }
 
     CloudProxyAuthResponse response;
-    if (!response.ParseFromString(proto_str)) {
+    if (!response.ParseFromString(*proto_str)) {
         return std::unexpected(MaiError::FAILED_TO_PARSE_RESPONSE_PROTOBUF);
     }
     if (!response.has_unk2() || !response.unk2().has_unk2()) {
@@ -232,10 +235,10 @@ get_oauth_callback_url(std::string_view url) {
     }
 
     nlohmann::json cloud_transfer_task{
-        {"cloud_task_id",   MAGIC_TASK_ID                },
-        {"long_polling",    false                        },
-        {"req_body_encode", base64::to_base64(serialized)},
-        {"timeout_ms",      30000                        }
+        {"cloud_task_id",   MAGIC_TASK_ID             },
+        {"long_polling",    false                     },
+        {"req_body_encode", base64::encode(serialized)},
+        {"timeout_ms",      30000                     }
     };
     DBG("send cloud proxy transfer task {}", cloud_transfer_task.dump());
 
@@ -254,13 +257,16 @@ get_oauth_callback_url(std::string_view url) {
         || !json.at("ilink_response_encode").is_string()) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
-    auto proto_str = base64::from_base64(
+    auto proto_str = base64::decode(
         json.at("ilink_response_encode").get<std::string_view>()
     );
+    if (!proto_str) {
+        return proto_str;
+    }
     DBG("got valid ilink response, now deserialize");
 
     CloudProxyTransferResponse response;
-    if (!response.ParseFromString(proto_str)) {
+    if (!response.ParseFromString(*proto_str)) {
         return std::unexpected(MaiError::FAILED_TO_PARSE_RESPONSE_PROTOBUF);
     }
     if (!response.has_payload()
