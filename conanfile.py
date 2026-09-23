@@ -1,6 +1,5 @@
 from conan import ConanFile
 from conan.tools.build import check_min_cppstd, cross_building
-from conan.tools.cmake import CMakeDeps
 from conan.tools.gnu import PkgConfigDeps
 from conan.tools.meson import MesonToolchain
 
@@ -9,6 +8,7 @@ class MaiserverConan(ConanFile):
     name = 'maiserver'
     requires = (
         'frida-gum/17.18.0',
+        'simple-web-server/0.0.0+git.546895a',
         'protobuf/7.35.0',
         'lz4/1.10.0',
         'nlohmann_json/3.12.0',
@@ -16,11 +16,9 @@ class MaiserverConan(ConanFile):
         'base64/0.5.2',
         'cpr/1.14.2',
         'date/3.0.5',
-        'asio/1.38.2',  # cmake deps, required by subproject simple-web-server
     )
     tool_requires = (
         'meson/1.10.2',
-        'cmake/4.4.2',
         'protobuf/7.35.0',
     )
     default_options = {
@@ -36,10 +34,7 @@ class MaiserverConan(ConanFile):
     def generate(self):
         pc = PkgConfigDeps(self)
         pc.generate()
-        cmake = CMakeDeps(self)
-        cmake.generate()
         meson = MesonToolchain(self)
         if cross_building(self):
-            meson.binaries['cmake'] = 'cmake'
             meson.binaries['pkg-config'] = 'pkg-config'
         meson.generate()

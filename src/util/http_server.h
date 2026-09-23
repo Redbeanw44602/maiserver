@@ -7,8 +7,8 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <server_http.hpp>
-#include <server_https.hpp>
+#include <simple-web-server/server_http.hpp>
+#include <simple-web-server/server_https.hpp>
 
 namespace mai::util {
 
