@@ -7,10 +7,6 @@ This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|�
 > [!TIP]
 > Maiserver is still in the very early stages; it may crash or encounter other issues. Feel free to file an issue.
 
-### TODOs
-
-- [ ] Docker image.
-
 ## What problem does it solve?
 
 If you think offering game features on a WeChat service account isn't a problem, then you've come to the wrong place.
@@ -25,6 +21,7 @@ If you think offering game features on a WeChat service account isn't a problem,
 - Supports unattended operation and provides RESTful endpoints.
 - It does not rely on WMPF[^1], which will save a significant amount of memory.
 - The Linux version of WeChat has difficulty detecting injections, so your account is (relatively) secure.
+- Access the WeChat GUI via [noVNC](https://novnc.com) (Docker Image).
 
 But,
 - It cannot bypass WeChat's restriction that allows only one PC login at a time.
@@ -69,7 +66,59 @@ Currently, all APIs are non-reentrant and block until a timeout occurs.
 
 ## Installation
 
-Recommended to compile it yourself, or download [precompiled binaries](https://github.com/Redbeanw44602/maiserver/releases).
+The simplest and most recommended installation method is to use Docker Compose, which will automatically set up the environment for you and handle the details.
+
+> Please follow the guidelines for your distribution to set up Docker Compose.
+
+Clone this repository
+```bash
+git clone https://github.com/Redbeanw44602/maiserver.git && cd maiserver
+```
+
+Copy the `.env` file
+```bash
+cp .env.example .env
+```
+
+By default, Maiserver listens on port `8080`, while noVNC (WeChat GUI) listens on port `6080`. You can change these settings as needed
+
+> [!WARNING]
+> Maiserver and noVNC listen on `127.0.0.1` by default because they are configured or designed not to support authentication. If you want to make these services available on the public internet, please use Nginx as a reverse proxy and configure authentication measures appropriately.
+
+> [!CAUTION]
+> Please do **NOT** attempt to expose ports 6080 or 8080 DIRECTLY to the public internet, as this will result in your account credentials being stolen!
+
+```
+MAISERVER_PORT=8080
+NOVNC_PORT=6080
+```
+
+Start the container and automatically update it on every startup
+```bash
+docker compose up --pull always
+```
+
+If you do not want automatic updates
+```bash
+docker compose up
+```
+
+If everything is working properly, you should now be able to access the WeChat at: http://127.0.0.1:6080/vnc.html
+
+Please log in to WeChat so you can use the API.
+
+Stop the container
+
+> [!NOTE]
+> WeChat data is persistently stored in the `maiserver_data` Docker volume.
+
+```bash
+docker compose down
+```
+
+## Installation (manually)
+
+Please compile it yourself, or download [precompiled binaries](https://github.com/Redbeanw44602/maiserver/releases).
 
 Simply set the `MAISERVER_CLOUD_PROXY_DEVICE_ID` environment variable and find a way to inject `libmaiserver.so` into `wechat`; `LD_PRELOAD` is supported.
 
