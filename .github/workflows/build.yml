@@ -83,7 +83,7 @@ jobs:
             build/*.debug
 
   publish:
-    if: github.ref == 'refs/heads/release'
+    if: github.ref == 'refs/heads/dockerhub'
     needs: build
     runs-on: ubuntu-latest
 
