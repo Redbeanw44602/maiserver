@@ -23,13 +23,13 @@ jobs:
             stdlib: libstdc++
             arch: x86_64
             os_name: ubuntu26
-            runner: ${{ env.ubuntu-26.04 }}
+            runner: ubuntu-26.04
           - name: linux / arm64
             toolchain: clang
             stdlib: libstdc++
             arch: arm64
             os_name: ubuntu26
-            runner: ${{ env.ubuntu-26.04-arm }}
+            runner: ubuntu-26.04-arm
     name: ${{ matrix.mode }} / ${{ matrix.plat.name }}
     runs-on: ${{ matrix.plat.runner }}
     steps:
@@ -85,7 +85,7 @@ jobs:
   publish:
     if: github.ref == 'refs/heads/release'
     needs: build
-    runs-on: ${{ env.ubuntu-latest }}
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -134,7 +134,7 @@ jobs:
 
   docker-build-amd64:
     needs: publish
-    runs-on: ${{ env.ubuntu-26.04 }}
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Set up Docker Buildx
@@ -157,7 +157,7 @@ jobs:
 
   docker-build-arm64:
     needs: publish
-    runs-on: ${{ env.ubuntu-26.04-arm }}
+    runs-on: ubuntu-26.04-arm
 
     steps:
       - name: Set up Docker Buildx
@@ -182,7 +182,7 @@ jobs:
     needs:
       - docker-build-amd64
       - docker-build-arm64
-    runs-on: ${{ env.ubuntu-latest }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Login to Docker Hub
