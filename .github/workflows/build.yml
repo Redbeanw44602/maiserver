@@ -8,6 +8,12 @@ on:
   workflow_dispatch:
   pull_request:
 
+env:
+  OS_GENERAL: ubuntu-latest
+  OS_ABISPEC_AMD64: ubuntu-26.04
+  OS_ABISPEC_ARM64: ubuntu-26.04-arm
+  DOCKER_IMAGE: krebsgeo/maiserver
+
 jobs:
   build:
     strategy:
@@ -20,13 +26,13 @@ jobs:
             stdlib: libstdc++
             arch: x86_64
             os_name: ubuntu26
-            runner: ubuntu-26.04
+            runner: ${{ env.OS_ABISPEC_AMD64 }}
           - name: linux / arm64
             toolchain: clang
             stdlib: libstdc++
             arch: arm64
             os_name: ubuntu26
-            runner: ubuntu-26.04-arm
+            runner: ${{ env.OS_ABISPEC_ARM64 }}
     name: ${{ matrix.mode }} / ${{ matrix.plat.name }}
     runs-on: ${{ matrix.plat.runner }}
     steps:
@@ -80,10 +86,9 @@ jobs:
             build/*.debug
 
   publish:
-    name: publish
     if: github.ref == 'refs/heads/release'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.OS_GENERAL }}
 
     permissions:
       contents: write
@@ -129,3 +134,69 @@ jobs:
         run: |
           gh release edit "$RELEASE_TAG" --notes "snapshot https://github.com/Redbeanw44602/maiserver/commit/$GITHUB_SHA at \`$(date -u +"%Y-%m-%d %H:%M:%S UTC")\`"
           gh release upload "$RELEASE_TAG" artifacts/* --clobber
+
+  docker-build-amd64:
+    needs: publish
+    runs-on: ${{ env.OS_ABISPEC_AMD64 }}
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}:amd64-${{ github.run_id }}
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,mode=max,scope=amd64
+
+  docker-build-arm64:
+    needs: publish
+    runs-on: ${{ env.OS_ABISPEC_ARM64 }}
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/arm64
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}:arm64-${{ github.run_id }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+
+  docker-publish:
+    needs:
+      - docker-build-amd64
+      - docker-build-arm64
+    runs-on: ${{ env.OS_GENERAL }}
+
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create multi-arch latest manifest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:latest \
+            ${{ env.DOCKER_IMAGE }}:amd64-${{ github.run_id }} \
+            ${{ env.DOCKER_IMAGE }}:arm64-${{ github.run_id }}
