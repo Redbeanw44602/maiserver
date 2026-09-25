@@ -79,11 +79,10 @@ jobs:
         with:
           name: maiserver-${{ matrix.plat.os_name }}-${{ matrix.plat.arch }}-${{ matrix.mode }}
           path: |
-            build/libmaiserver.so
+            build/libmaiserver.soW
             build/*.debug
 
   publish:
-    if: github.ref == 'refs/heads/dockerhub'
     needs: build
     runs-on: ubuntu-latest
 
