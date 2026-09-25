@@ -9,9 +9,6 @@ on:
   pull_request:
 
 env:
-  OS_GENERAL: ubuntu-latest
-  OS_ABISPEC_AMD64: ubuntu-26.04
-  OS_ABISPEC_ARM64: ubuntu-26.04-arm
   DOCKER_IMAGE: krebsgeo/maiserver
 
 jobs:
@@ -26,13 +23,13 @@ jobs:
             stdlib: libstdc++
             arch: x86_64
             os_name: ubuntu26
-            runner: ${{ env.OS_ABISPEC_AMD64 }}
+            runner: ${{ env.ubuntu-26.04 }}
           - name: linux / arm64
             toolchain: clang
             stdlib: libstdc++
             arch: arm64
             os_name: ubuntu26
-            runner: ${{ env.OS_ABISPEC_ARM64 }}
+            runner: ${{ env.ubuntu-26.04-arm }}
     name: ${{ matrix.mode }} / ${{ matrix.plat.name }}
     runs-on: ${{ matrix.plat.runner }}
     steps:
@@ -88,7 +85,7 @@ jobs:
   publish:
     if: github.ref == 'refs/heads/release'
     needs: build
-    runs-on: ${{ env.OS_GENERAL }}
+    runs-on: ${{ env.ubuntu-latest }}
 
     permissions:
       contents: write
@@ -137,7 +134,7 @@ jobs:
 
   docker-build-amd64:
     needs: publish
-    runs-on: ${{ env.OS_ABISPEC_AMD64 }}
+    runs-on: ${{ env.ubuntu-26.04 }}
 
     steps:
       - name: Set up Docker Buildx
@@ -160,7 +157,7 @@ jobs:
 
   docker-build-arm64:
     needs: publish
-    runs-on: ${{ env.OS_ABISPEC_ARM64 }}
+    runs-on: ${{ env.ubuntu-26.04-arm }}
 
     steps:
       - name: Set up Docker Buildx
@@ -185,7 +182,7 @@ jobs:
     needs:
       - docker-build-amd64
       - docker-build-arm64
-    runs-on: ${{ env.OS_GENERAL }}
+    runs-on: ${{ env.ubuntu-latest }}
 
     steps:
       - name: Login to Docker Hub
