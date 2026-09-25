@@ -68,19 +68,19 @@ Currently, all APIs are non-reentrant and block until a timeout occurs.
 
 The simplest and most recommended installation method is to use Docker Compose, which will automatically set up the environment for you and handle the details.
 
-> Please follow the guidelines for your distribution to set up Docker Compose.
+> Please follow the guidelines for your distribution to set up docker-compose.
 
-Clone this repository
+Clone this repository:
 ```bash
 git clone https://github.com/Redbeanw44602/maiserver.git && cd maiserver
 ```
 
-Copy the `.env` file
+Copy the `.env` file:
 ```bash
 cp .env.example .env
 ```
 
-By default, Maiserver listens on port `8080`, while noVNC (WeChat GUI) listens on port `6080`. You can change these settings as needed
+By default, Maiserver listens on port `8080`, while noVNC (WeChat GUI) listens on port `6080`. You can change these settings as needed:
 
 > [!WARNING]
 > Maiserver and noVNC listen on `127.0.0.1` by default because they are configured or designed not to support authentication. If you want to make these services available on the public internet, please use Nginx as a reverse proxy and configure authentication measures appropriately.
@@ -93,12 +93,12 @@ MAISERVER_PORT=8080
 NOVNC_PORT=6080
 ```
 
-Start the container and automatically update it on every startup
+Start the container and automatically update it on every startup:
 ```bash
 docker compose up --pull always
 ```
 
-If you do not want automatic updates
+If you do not want automatic updates:
 ```bash
 docker compose up
 ```
@@ -107,7 +107,7 @@ If everything is working properly, you should now be able to access the WeChat a
 
 Please log in to WeChat so you can use the API.
 
-Stop the container
+Stop the container:
 
 > [!NOTE]
 > WeChat data is persistently stored in the `maiserver_data` Docker volume.
@@ -135,6 +135,36 @@ If Maiserver runs successfully, it will print something like the following to st
 Hello maiserver!
 The device ID is set to: 13636729f638cc5006837818a6a7083dd17394c8a01e2b57f0c2325eec955c12
 Starting to listen on 0.0.0.0:8080 ...
+```
+
+### Compile Guidelines
+
+Maiserver uses the Meson build system and Conan to manage dependencies. To compile it yourself, you will need:
+ - Conan 2
+ - Compilers that support C++23 (`clang` is recommended)
+ - Standard library that supports C++23 (`libstdc++` is recommended)
+
+> **Technical Details**  
+> WeChat uses at least two different configurations of the `libc++`, but Maiserver *should* handle this well. Therefore, the build of Maiserver is not affected by the standard library used by WeChat (See [mem/std_string.h](src/mem/std_string.h)).
+
+First, select a [compilation profile](.conan2/profiles); for cross-compilation, you’ll need to select two.
+
+Install Dependencies:
+```bash
+# conan install . -pr:a build-clang-libstdc++-debug -b missing -of=build/conan # native compiling
+# conan install . -pr:b build-gcc-debug -pr:h host-gcc-debug-aarch64 -b missing -of=build/conan # cross compiling to aarch64
+source build/conan/conanbuild.sh
+```
+
+Configure the project:
+```bash
+# meson setup build --native-file build/conan/conan_meson_native.ini # native compiling
+# meson setup build --cross-file build/conan/conan_meson_cross.ini # cross compiling to aarch64
+```
+
+Compile the project:
+```bash
+meson compile -C build
 ```
 
 ### About the Cloud Proxy Device ID
