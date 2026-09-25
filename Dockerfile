@@ -6,7 +6,8 @@ ARG TARGETARCH
 ARG VERSION=dev-nightly
 ARG BUILD_TYPE=release
 ARG WECHAT_VERSION=4.1.13.9
-ARG WECHAT_SHA256=096865e050ba0d3c1a23887227e2400bf343037b1d7d658c84c88ff26bfdc17f
+ARG WECHAT_SHA256_x86_64=096865e050ba0d3c1a23887227e2400bf343037b1d7d658c84c88ff26bfdc17f
+ARG WECHAT_SHA256_arm64=a6d115d24dfe3ed1b7e7de16cf6cc02acef8df5668150f702ac8d8c5256405fa
 ARG OS_NAME=ubuntu26
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,8 +15,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     case "$TARGETARCH" in \
-      amd64) ARCH=x86_64 ;; \
-      arm64) ARCH=arm64 ;; \
+      amd64) ARCH=x86_64; WECHAT_SHA256=$WECHAT_SHA256_x86_64; ;; \
+      arm64) ARCH=arm64; WECHAT_SHA256=$WECHAT_SHA256_arm64; ;; \
       *) echo "Unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
     esac \
  && apt-get update \
