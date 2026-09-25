@@ -1,0 +1,12 @@
+services:
+  maiserver:
+    image: krebsgeo/maiserver:latest
+    ports:
+      - "127.0.0.1:${MAISERVER_PORT:-8080}:8080"
+      - "127.0.0.1:${NOVNC_PORT:-6080}:6080"
+    volumes:
+      - maiserver_data:/root
+    restart: unless-stopped
+
+volumes:
+  maiserver_data:

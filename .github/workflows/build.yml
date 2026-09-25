@@ -49,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          ./recipes/export.sh
+          ./scripts/export_recipes.sh
           conan install . -pr:a build-${{ matrix.plat.toolchain }}-${{ matrix.plat.stdlib }}-${{ matrix.mode }} -b missing -of=build/conan
 
       - name: Configure
