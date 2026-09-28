@@ -1,6 +1,7 @@
 services:
   maiserver:
     image: krebsgeo/maiserver:latest
+    network_mode: bridge
     ports:
       - "127.0.0.1:${MAISERVER_PORT:-8080}:8080"
       - "127.0.0.1:${NOVNC_PORT:-6080}:6080"

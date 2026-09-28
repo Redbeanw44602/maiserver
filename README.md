@@ -20,7 +20,7 @@ If you think offering game features on a WeChat service account isn't a problem,
 
 - Supports unattended operation and provides RESTful endpoints.
 - It does not rely on WMPF[^1], which will save a significant amount of memory.
-- The Linux version of WeChat has difficulty detecting injections, so your account is (relatively) secure.
+- The Linux version of WeChat has difficulty detecting injections, so your account is *relatively* secure.
 - Access the WeChat GUI via [noVNC](https://novnc.com) (Docker Image).
 
 But,
@@ -82,16 +82,98 @@ cp .env.example .env
 
 By default, Maiserver listens on port `8080`, while noVNC (WeChat GUI) listens on port `6080`. You can change these settings as needed:
 
+```
+MAISERVER_PORT=8080
+NOVNC_PORT=6080
+```
+
 > [!WARNING]
 > Maiserver and noVNC listen on `127.0.0.1` by default because they are configured or designed not to support authentication. If you want to make these services available on the public internet, please use Nginx as a reverse proxy and configure authentication measures appropriately.
 
 > [!CAUTION]
 > Please do **NOT** attempt to expose ports 6080 or 8080 DIRECTLY to the public internet, as this will result in your account credentials being stolen!
 
+<details>
+<summary>Sample: Reverse proxy server configuration</summary>
+
+### Nginx
+
+> Please follow the guidelines for your distribution to set up nginx.
+
+The following example sets up a reverse proxy for Maiserver and noVNC on port `8081`. For Maiserver (`/`), it will verify whether the requester has the expected `X-Auth-Token` header, while for noVNC (`/novnc`), it will display a pop-up window prompting the user to enter a username and password.  
+
+First, set the username and password for logging into noVNC:
+```bash
+# Please replace <USERNAME> and <PASSWORD>!
+echo "<USERNAME>:$(openssl passwd -apr1 <PASSWORD>)" > /etc/nginx/.htpasswd
 ```
-MAISERVER_PORT=8080
-NOVNC_PORT=6080
+
+The example has not yet been configured for HTTPS, so it listens on `127.0.0.1` by default; you can modify this as needed. A convenient use case is to expose the service to the public internet via [cloudflared](https://github.com/cloudflare/cloudflared).  
+
+```nginx
+# Please replace <TOKEN>!
+# If you have modified the port mapping, please update it accordingly.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 127.0.0.1:8081;
+
+    absolute_redirect off;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    rewrite ^/novnc/?$ /novnc/vnc.html permanent;
+
+    location / {
+        if ($http_x_auth_token != "<TOKEN>") {
+            return 401;
+        }
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    location /novnc/ {
+        auth_basic "noVNC";
+        auth_basic_user_file /etc/nginx/.htpasswd; 
+        proxy_pass http://127.0.0.1:6080/;
+    }
+}
 ```
+
+Save the configuration to `/etc/nginx/conf.d/maiserver.conf`, then restart the nginx service.
+
+</details>
+
+<details>
+<summary>Sample: Exposing the service to the public internet</summary>
+
+### Cloudflared
+
+> Please follow the guidelines for your distribution and [cloudflare docs](https://developers.cloudflare.com/tunnel/get-started/) to set up cloudflared.
+
+Navigate to <ins>Protect & Connect</ins> > <ins>Networking</ins> > <ins>Tunnels</ins>, then <ins>Create Tunnel</ins>
+
+<img width="1905" height="212" alt="image" src="https://github.com/user-attachments/assets/3eeb7b76-1913-4fe7-a55f-5a6c75e06a6b" />
+
+Once the tunnel has been created + connected, navigate to <ins>Routes</ins> and then click <ins>Add route</ins>, select <ins>Published application</ins>
+
+<img width="1316" height="887" alt="image" src="https://github.com/user-attachments/assets/d9dc6680-1ca4-4ddf-91c4-ed913cac22dc" />
+
+Select a <ins>Domain</ins>, then enter a <ins>Subdomain</ins>, set `http://127.0.0.1:8081` as the <ins>Service URL</ins>, assuming you are using the sample Nginx server configuration mentioned above.
+
+<img width="1316" height="1196" alt="image" src="https://github.com/user-attachments/assets/f740c845-963b-435a-bdbb-89bf6765872c" />
+
+Click <ins>Add route</ins>, and your service is now deployed to the public internet!
+
+</details>
 
 Start the container and automatically update it on every startup:
 ```bash
