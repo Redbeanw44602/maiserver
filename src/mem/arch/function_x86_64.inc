@@ -17,67 +17,67 @@ namespace mai::mem {
 
 inline DefineFunction<
     WeChat,
-    0x44FEA10,
+    0x45CD330,
     int(int, char**)>
     main;
 
 inline DefineFunction<
     WeChat,
-    0x8E1B800,
+    0x8E3F380,
     void(uint32_t)>
     set_uin;
 
 inline DefineFunction<
     WeChat,
-    0x6216510,
+    0x6232310,
     void(const std::vector<MsgItem>&, void*, void*)>
     parse_newsync_messages;
 
 inline DefineFunction<
     WeChat,
-    0x8525910,
+    0x8545910,
     void*()>
     load_wmpf_host_export;
 
 inline DefineFunction<
     WeChat,
-    0x736DFD0,
+    0x738C5F0,
     LLVMStringNA*()>
     get_device_id;
 
 inline DefineFunction<
     WeChat,
-    0x770DFA0,
+    0x772CA20,
     void(void*, uint32_t, const LLVMStringNA&, uint32_t, const LLVMStringNA&)>
     send_biz_menu_event;
 
 inline DefineFunction<
     WeChat,
-    0x45B9220,
+    0x45CD220,
     void()>
     init_crashpad;
 
 inline DefineFunction<
     WeChat,
-    0x8195B80,
+    0x81B5680,
     uint32_t(void*)>
     init_wxocr;
 
 inline DefineFunction<
     WeChat,
-    0x84C5050,
+    0x8193090,
     void(void*)>
     init_wxplayer;
 
 inline DefineFunction<
     WeChat,
-    0x8173590,
+    0x84E4E40,
     void(void*)>
     init_wxplayer_2;
 
 inline DefineFunction<
     WeChat,
-    0x81885E0,
+    0x81A80E0,
     void(void*)>
     init_wxutility;
 
@@ -85,31 +85,31 @@ inline DefineFunction<
 
 inline DefineFunction<
     BrowserHost,
-    0x1EEFB0,
+    0x1EF360,
     void*(void*, uint32_t, const LLVMString&, void*)>
     send_cloud_proxy_transfer_request;
 
 inline DefineFunction<
     BrowserHost,
-    0x1EEB30,
+    0x1EEEE0,
     void*(void*, uint32_t, const LLVMString&, void*)>
     send_cloud_proxy_auth_request;
 
 inline DefineFunction<
     BrowserHost,
-    0x1EB6B0,
+    0x1EBA60,
     void(void*, uint32_t, const LLVMString&)>
     run_cloud_proxy_callback;
 
 inline DefineFunction<
     BrowserHost,
-    0x1EECF0,
+    0x1EF0A0,
     void*(void*, uint32_t, void*)>
     insert_cloud_proxy_callback;
 
 inline DefineFunction<
     BrowserHost,
-    0x26D8C0,
+    0x26DC70,
     void(void*, void*)>
     init_browser;
 

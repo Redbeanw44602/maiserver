@@ -99,7 +99,7 @@ std::expected<std::vector<char>, MaiError> build_oauth_request(
     base_request->set_device_id(device_id);
     /* The meaning of this field is currently unknown, but it may be related to
      * the version. Update it when adapting to the new version. */
-    base_request->set_val1(-227271415);
+    base_request->set_val1(-227271398);
     base_request->set_client_os("UnifiedPCLinux");
     base_request->set_val2(0);
     std::vector<char> serialized(request.ByteSizeLong());
