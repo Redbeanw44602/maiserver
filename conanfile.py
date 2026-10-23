@@ -7,9 +7,9 @@ from conan.tools.meson import MesonToolchain
 class MaiserverConan(ConanFile):
     name = 'maiserver'
     requires = (
-        'frida-gum/17.18.0',
+        'frida-gum/17.24.3',
         'simple-web-server/0.0.0+git.546895a',
-        'protobuf/7.35.0',
+        'protobuf/7.36.2',
         'lz4/1.10.0',
         'nlohmann_json/3.12.0',
         'pugixml/1.16',
@@ -19,7 +19,7 @@ class MaiserverConan(ConanFile):
     )
     tool_requires = (
         'meson/1.10.2',
-        'protobuf/7.35.0',
+        'protobuf/7.36.2',
     )
     default_options = {
         'libcurl/*:with_nghttp2': True,

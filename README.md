@@ -94,7 +94,7 @@ NOVNC_PORT=6080
 > Please do **NOT** attempt to expose ports 6080 or 8080 DIRECTLY to the public internet, as this will result in your account credentials being stolen!
 
 <details>
-<summary>Sample: Reverse proxy server configuration</summary>
+<summary>Sample 1: Using <strong>Nginx</strong> as a reverse proxy and exposing the service to the public internet via <strong>Cloudflared</strong></summary>
 
 ### Nginx
 
@@ -108,8 +108,7 @@ First, set the username and password for logging into noVNC:
 echo "<USERNAME>:$(openssl passwd -apr1 <PASSWORD>)" > /etc/nginx/.htpasswd
 ```
 
-The example has not yet been configured for HTTPS, so it listens on `127.0.0.1` by default; you can modify this as needed. A convenient use case is to expose the service to the public internet via [cloudflared](https://github.com/cloudflare/cloudflared).  
-
+The following example does not have HTTPS configured and listens on `127.0.0.1`, as it will be used by Cloudflared next.
 ```nginx
 # Please replace <TOKEN>!
 # If you have modified the port mapping, please update it accordingly.
@@ -150,11 +149,6 @@ server {
 
 Save the configuration to `/etc/nginx/conf.d/maiserver.conf`, then restart the nginx service.
 
-</details>
-
-<details>
-<summary>Sample: Exposing the service to the public internet</summary>
-
 ### Cloudflared
 
 > Please follow the guidelines for your distribution and [cloudflare docs](https://developers.cloudflare.com/tunnel/get-started/) to set up cloudflared.
@@ -167,11 +161,13 @@ Once the tunnel has been created + connected, navigate to <ins>Routes</ins> and 
 
 <img width="1316" height="887" alt="image" src="https://github.com/user-attachments/assets/d9dc6680-1ca4-4ddf-91c4-ed913cac22dc" />
 
-Select a <ins>Domain</ins>, then enter a <ins>Subdomain</ins>, set `http://127.0.0.1:8081` as the <ins>Service URL</ins>, assuming you are using the sample Nginx server configuration mentioned above.
+Select a <ins>Domain</ins>, then enter a <ins>Subdomain</ins>, set `http://127.0.0.1:8081` as the <ins>Service URL</ins>.
 
 <img width="1316" height="1196" alt="image" src="https://github.com/user-attachments/assets/f740c845-963b-435a-bdbb-89bf6765872c" />
 
 Click <ins>Add route</ins>, and your service is now deployed to the public internet!
+
+---
 
 </details>
 

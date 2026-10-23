@@ -7,7 +7,7 @@ from conan.errors import ConanInvalidConfiguration
 
 class FridaGumRecipe(ConanFile):
     name = 'frida-gum'
-    version = '17.18.0'
+    version = '17.24.3'
 
     settings = 'os', 'arch'
 

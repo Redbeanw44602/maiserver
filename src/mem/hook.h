@@ -54,7 +54,7 @@ private:
             return gum_module_get_range(module)->base_address;
         }
         std::println("Failed to find the base address of '{}'", Module.c_str());
-        return 0;
+        std::exit(1);
     }
 };
 
@@ -78,14 +78,14 @@ private:
         auto module_ = gum_process_find_module_by_name(Module.c_str());
         if (!module_) {
             std::println("Failed to find the module: '{}'", Module.c_str());
-            return 0;
+            std::exit(1);
         }
         if (auto addr = gum_module_find_export_by_name(module_, Symbol.c_str()))
             return addr;
         if (auto addr = gum_module_find_symbol_by_name(module_, Symbol.c_str()))
             return addr;
         std::println("Failed to find the symbol: '{}'", Symbol.c_str());
-        return 0;
+        std::exit(1);
     }
 };
 
@@ -153,9 +153,15 @@ using ResolveFunction =
                             address,                                           \
                             static_cast<int>(result)                           \
                         );                                                     \
+                        std::exit(1);                                          \
                     }                                                          \
                     /* TRANSACTION END */                                      \
                     gum_interceptor_end_transaction(interceptor);              \
+                    std::println(                                              \
+                        "Installed hook: {} at {:#x}",                         \
+                        #function,                                             \
+                        address                                                \
+                    );                                                         \
                 }                                                              \
                 static function_signature* origin;                             \
                 static function_signature  detour;                             \
