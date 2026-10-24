@@ -9,6 +9,7 @@ class MaiserverConan(ConanFile):
     requires = (
         'frida-gum/17.24.3',
         'simple-web-server/0.0.0+git.546895a',
+        'simple-websocket-server/0.0.0+git.0e1cf67',
         'protobuf/7.36.2',
         'lz4/1.10.0',
         'nlohmann_json/3.12.0',

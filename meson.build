@@ -22,6 +22,7 @@ endif
 
 frida_gum_dep = dependency('frida-gum')
 simple_web_server_dep = dependency('simple-web-server')
+simple_websocket_server_dep = dependency('simple-websocket-server')
 lz4_dep = dependency('liblz4')
 nlohmann_json_dep = dependency('nlohmann_json')
 pugixml_dep = dependency('pugixml')
@@ -50,6 +51,7 @@ shared_library(
         micromsg_dep,
         frida_gum_dep,
         simple_web_server_dep,
+        simple_websocket_server_dep,
         lz4_dep,
         nlohmann_json_dep,
         base64_dep,
