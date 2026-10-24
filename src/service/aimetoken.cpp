@@ -311,13 +311,13 @@ get_oauth_callback_url(std::string_view url) {
     return oauth_response.callback_url();
 }
 
-std::expected<AimeToken, MaiError> aimetoken() {
+std::expected<AimeToken, MaiError> aimetoken(std::string_view service_name) {
     if (auto fail = check(channel)) {
         return fail;
     }
     DBG("called aimetoken(), start oauth process...");
     auto oauth_url = cpr::Get(
-        cpr::Url{WEIXIN_WAHLAP_AIME_URL},
+        cpr::Url{std::format("{}/{}", TGK_WCAIME_OAUTH_URL, service_name)},
         cpr::Redirect{false},
         cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0}
 #if MAI_DEBUG

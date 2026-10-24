@@ -50,7 +50,10 @@ void endpoint_aimetoken(
     [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
 ) {
     HttpResponder response(*response_);
-    if (auto result = aimetoken()) {
+    auto          path         = std::string_view(request_->path);
+    auto          service_name = path.substr(path.find_last_of('/') + 1);
+    std::println("service: {}", service_name);
+    if (auto result = aimetoken(service_name)) {
         // clang-format off
         return response(
             nlohmann::ordered_json{
@@ -61,6 +64,13 @@ void endpoint_aimetoken(
     } else {
         return response(result.error());
     }
+}
+
+void endpoint_default(
+    std::shared_ptr<HttpServer::Response>                 response_,
+    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
+) {
+    return response_->write(SimpleWeb::StatusCode::client_error_not_found);
 }
 
 template <typename T>
@@ -144,10 +154,14 @@ HOOK(main, int argc, char** argv) {
     std::println("The device ID is set to: {}", string::hex(config.device_id));
 
     HttpServer server;
-    server.config.address                             = config.address;
-    server.config.port                                = config.port;
-    server.resource["^/api/v1/auth/qrcode"]["GET"]    = endpoint_qrcode;
-    server.resource["^/api/v1/auth/aimetoken"]["GET"] = endpoint_aimetoken;
+    server.config.address                           = config.address;
+    server.config.port                              = config.port;
+    server.resource["^/api/v1/auth/qrcode$"]["GET"] = endpoint_qrcode;
+    server.resource["^/api/v1/auth/aimetoken/maimai-dx$"]["GET"] =
+        endpoint_aimetoken;
+    server.resource["^/api/v1/auth/aimetoken/chunithm$"]["GET"] =
+        endpoint_aimetoken;
+    server.default_resource["GET"] = endpoint_default;
 
     std::thread server_thread([&server]() {
         std::println(

@@ -16,6 +16,6 @@ struct AimeToken {
     std::string url;
 };
 
-std::expected<AimeToken, MaiError> aimetoken();
+std::expected<AimeToken, MaiError> aimetoken(std::string_view service);
 
 } // namespace mai::service

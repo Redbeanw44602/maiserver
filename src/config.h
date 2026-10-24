@@ -32,7 +32,7 @@ constexpr auto CLOUD_PROXY_TRANSFER_CMD_URL =
     "/ilink/ilinkapp/mm/bizoauth/oauth_authorize";
 constexpr auto CLOUD_PROXY_SHORTCONN_HEADER_SIZE = 16;
 
-constexpr auto WEIXIN_WAHLAP_AIME_URL =
-    "https://tgk-wcaime.wahlap.com/wc_auth/oauth/authorize/maimai-dx";
+constexpr auto TGK_WCAIME_OAUTH_URL =
+    "https://tgk-wcaime.wahlap.com/wc_auth/oauth/authorize";
 
 } // namespace mai
