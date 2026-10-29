@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <print> // IWYU pragma: export
+
 #if MAI_DEBUG
 #define DBG(...) std::println("[maiserver:debug] " __VA_ARGS__)
 #else
