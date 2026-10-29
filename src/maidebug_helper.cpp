@@ -4,6 +4,8 @@
  * This file is part of the Maibox open source project.
  */
 
+#if MAI_DEBUG
+
 #include <lz4.h>
 #include <nlohmann/json.hpp>
 
@@ -121,9 +123,9 @@ HOOK_DELAYED(
 
 static CTOR_PRIORITY_MIDDLE void init() {
     on_lib_wmpf_host_export_ready.connect([]() {
-#if MAI_DEBUG
         HOOK_INSTALL(send_cloud_proxy_transfer_request);
         HOOK_INSTALL(send_cloud_proxy_auth_request);
-#endif
     });
 }
+
+#endif
