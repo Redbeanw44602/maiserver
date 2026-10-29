@@ -6,71 +6,19 @@
 
 #include <asio/ip/address.hpp>
 
+#include "api/basic.h"
 #include "config.h"
 #include "error.h"
 #include "mem/function.h"
 #include "mem/signal.h"
 #include "util/base64.h"
 #include "util/env.h"
-#include "util/http_server.h"
 #include "util/string.h"
 
 using namespace mai;
 using namespace mai::util;
-using namespace mai::service;
 using namespace mai::mem;
-
-using HttpServer    = SimpleWeb::Server<SimpleWeb::HTTP>;
-using HttpResponder = Responder<HttpServer::Response, MaiError>;
-
-void endpoint_qrcode(
-    std::shared_ptr<HttpServer::Response>                 response_,
-    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
-) {
-    HttpResponder response(*response_);
-    if (auto result = qrcode()) {
-        // clang-format off
-        return response(
-            nlohmann::ordered_json{
-                {"url",         result->url        },
-                {"description", result->description},
-                {"maid",        result->maid       },
-                {"expires_in",  result->expires_in }
-            }
-        );
-        // clang-format on
-    } else {
-        return response(result.error());
-    }
-}
-
-void endpoint_aimetoken(
-    std::shared_ptr<HttpServer::Response>                 response_,
-    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
-) {
-    HttpResponder response(*response_);
-    auto          path         = std::string_view(request_->path);
-    auto          service_name = path.substr(path.find_last_of('/') + 1);
-    std::println("service: {}", service_name);
-    if (auto result = aimetoken(service_name)) {
-        // clang-format off
-        return response(
-            nlohmann::ordered_json{
-                {"url", result->url}
-            }
-        );
-        // clang-format on
-    } else {
-        return response(result.error());
-    }
-}
-
-void endpoint_default(
-    std::shared_ptr<HttpServer::Response>                 response_,
-    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
-) {
-    return response_->write(SimpleWeb::StatusCode::client_error_not_found);
-}
+using namespace mai::api;
 
 template <typename T>
 auto environment(string::Literal name) {
@@ -152,25 +100,8 @@ HOOK(main, int argc, char** argv) {
 
     std::println("The device ID is set to: {}", string::hex(config.device_id));
 
-    HttpServer server;
-    server.config.address                           = config.address;
-    server.config.port                              = config.port;
-    server.resource["^/api/v1/auth/qrcode$"]["GET"] = endpoint_qrcode;
-    server.resource["^/api/v1/auth/aimetoken/maimai-dx$"]["GET"] =
-        endpoint_aimetoken;
-    server.resource["^/api/v1/auth/aimetoken/chunithm$"]["GET"] =
-        endpoint_aimetoken;
-    server.default_resource["GET"] = endpoint_default;
-
-    std::thread server_thread([&server]() {
-        std::println(
-            "Starting to listen on {}:{} ...",
-            server.config.address,
-            server.config.port
-        );
-        server.start();
-    });
-    server_thread.detach();
+    BasicAPI http_api(config.address, config.port);
+    http_api.start_server();
 
     return origin(argc, argv);
 };
@@ -185,6 +116,8 @@ HOOK(load_wmpf_host_export) {
     on_lib_wmpf_host_export_ready();
     return ret;
 }
+
+static CTOR_PRIORITY_MIDDLE void init() {
     // Prevent LD_PRELOAD Injection into Child Processes.
     unsetenv("LD_PRELOAD");
 }

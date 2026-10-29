@@ -8,9 +8,9 @@
 
 #include <nlohmann/json.hpp>
 #include <simple-web-server/server_http.hpp>
-#include <simple-web-server/server_https.hpp>
+#include <simple-websocket-server/server_ws.hpp>
 
-namespace mai::util {
+#include "error.h"
 
 template <typename Resp, typename Error>
 class Responder {
@@ -61,4 +61,7 @@ private:
     }
 };
 
-} // namespace mai::util
+using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
+using WsServer   = SimpleWeb::SocketServer<SimpleWeb::WS>;
+
+using HttpResponder = Responder<HttpServer::Response, mai::MaiError>;

@@ -16,6 +16,12 @@ struct AimeToken {
     std::string url;
 };
 
-std::expected<AimeToken, MaiError> aimetoken(std::string_view service);
+using AimeTokenOrErr = std::expected<AimeToken, MaiError>;
+
+/* Retrieve the URL with the `t` param included synchronously, which has been
+ * authenticated via WeChat OAuth for logging into maimai DX NET / CHUNITHM NET.
+ * Known service names: 'maimai-dx', 'chunithm'.
+ */
+AimeTokenOrErr get_aimetoken(std::string_view service_name);
 
 } // namespace mai::service

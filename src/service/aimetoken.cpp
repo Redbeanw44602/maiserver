@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "log.h"
+#include "mem/async_wrapper/cloud_proxy.h"
 #include "mem/function.h"
 #include "mem/std_string.h"
 #include "mem/wpkg_header.h"
@@ -212,7 +213,13 @@ get_oauth_callback_url(std::string_view url) {
 }
 
 } // namespace
+
+AimeTokenOrErr get_aimetoken(std::string_view service_name) {
     DBG("called aimetoken(), start oauth process...");
+    if (g_uin == 0) {
+        return std::unexpected(MaiError::WECHAT_NOT_LOGGED_IN);
+    }
+
     auto oauth_url = cpr::Get(
         cpr::Url{std::format("{}/{}", TGK_WCAIME_OAUTH_URL, service_name)},
         cpr::Redirect{false},
