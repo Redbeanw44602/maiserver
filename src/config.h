@@ -20,8 +20,6 @@ inline bool        g_slim{false};
 
 } // namespace shared_variables
 
-constexpr uint32_t MAGIC_TASK_ID = 114514'1919;
-
 constexpr auto SERVICE_ACCOUNT_GH_USERNAME = "gh_6cfb73ca89e6";
 constexpr auto SERVICE_ACCOUNT_MENU_ID     = 455590723;
 constexpr auto SERVICE_ACCOUNT_MENU_KEY    = "rselfmenu_1";

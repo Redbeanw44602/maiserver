@@ -14,74 +14,18 @@
 #include "mem/std_string.h"
 #include "mem/wpkg_header.h"
 #include "service/aimetoken.h"
-#include "service/service.h"
-#include "util/base64.h"
-#include "util/simple_channel.h"
 #include "util/string.h"
 
 #include "micromsg.pb.h"
 
-using namespace std::chrono_literals;
 using namespace mai;
 using namespace mai::util;
 using namespace mai::mem;
+using namespace mai::mem::async_wrapper;
 
 namespace mai::service {
 
-static SimpleChannel channel;
-
-std::expected<std::string, MaiError> get_cloud_proxy_session_info() {
-    auto service = get_browsing_service();
-    if (!service) {
-        return std::unexpected(MaiError::FAILED_TO_GET_BROWSING_SERVICE);
-    }
-
-    CloudProxyAuthRequest auth_request;
-    auto                  base_request = auth_request.mutable_request();
-    base_request->set_device_id(g_cloud_proxy_device_id);
-    std::string serialized;
-    if (!auth_request.SerializeToString(&serialized)) {
-        return std::unexpected(MaiError::FAILED_TO_SERIALIZE_REQUEST_PROTOBUF);
-    }
-    nlohmann::json cloud_auth_task{
-        {"cloud_task_id",   MAGIC_TASK_ID             },
-        {"long_polling",    false                     },
-        {"req_body_encode", base64::encode(serialized)},
-        {"timeout_ms",      10000                     }
-    };
-
-    send_cloud_proxy_auth_request(
-        service,
-        MAGIC_TASK_ID,
-        LLVMString(cloud_auth_task.dump()),
-        nullptr // callback
-    );
-    auto result = channel.wait_for_message(10s);
-    if (!result) {
-        return std::unexpected(MaiError::TIMEOUT);
-    }
-    auto json = nlohmann::json::parse(*result);
-    if (!json.contains("client_auth_resp_encode") // todo: check err_code?
-        || !json.at("client_auth_resp_encode").is_string()) {
-        return std::unexpected(MaiError::ILLEGAL_RESPONSE);
-    }
-    auto proto_str = base64::decode(
-        json.at("client_auth_resp_encode").get<std::string_view>()
-    );
-    if (!proto_str) {
-        return proto_str;
-    }
-
-    CloudProxyAuthResponse response;
-    if (!response.ParseFromString(*proto_str)) {
-        return std::unexpected(MaiError::FAILED_TO_PARSE_RESPONSE_PROTOBUF);
-    }
-    if (!response.has_unk2() || !response.unk2().has_unk2()) {
-        return std::unexpected(MaiError::MISSING_SESSION_INFO);
-    }
-
-    return response.unk2().unk2().session_info();
-}
+namespace {
 
 std::expected<std::vector<char>, MaiError> build_oauth_request(
     std::string_view url,
@@ -217,65 +161,21 @@ get_oauth_callback_url(std::string_view url) {
         shortconn_header.size(),
         string::hex(shortconn_header));
 
-    CloudProxyTransferRequest request;
-    request.set_val1(1901);
-    request.set_cmd_id(CLOUD_PROXY_TRANSFER_CMD_ID);
-    request.set_cmd_host(CLOUD_PROXY_TRANSFER_CMD_HOST);
-    request.set_cmd_url(CLOUD_PROXY_TRANSFER_CMD_URL);
-    auto payload = request.mutable_payload();
-    payload->reserve(total_size);
-    payload->append_range(shortconn_header);
-    payload->append_range(wpkg_header);
-    payload->append_range(oauth_request);
-
-    DBG("start to serialize cloud proxy transfer request");
-    std::string serialized;
-    if (!request.SerializeToString(&serialized)) {
-        return std::unexpected(MaiError::FAILED_TO_SERIALIZE_REQUEST_PROTOBUF);
-    }
-
-    nlohmann::json cloud_transfer_task{
-        {"cloud_task_id",   MAGIC_TASK_ID             },
-        {"long_polling",    false                     },
-        {"req_body_encode", base64::encode(serialized)},
-        {"timeout_ms",      30000                     }
-    };
-    DBG("send cloud proxy transfer task {}", cloud_transfer_task.dump());
-
-    send_cloud_proxy_transfer_request(
-        service,
-        MAGIC_TASK_ID,
-        LLVMString(cloud_transfer_task.dump()),
-        nullptr // callback
+    std::string request;
+    request.reserve(total_size);
+    request.append_range(shortconn_header);
+    request.append_range(wpkg_header);
+    request.append_range(oauth_request);
+    auto response = cloud_proxy::transfer(
+        CLOUD_PROXY_TRANSFER_CMD_ID,
+        CLOUD_PROXY_TRANSFER_CMD_HOST,
+        CLOUD_PROXY_TRANSFER_CMD_URL,
+        std::move(request)
     );
-    auto result = channel.wait_for_message(30s);
-    if (!result) {
-        return std::unexpected(MaiError::TIMEOUT);
+    if (!response) {
+        return response;
     }
-    auto json = nlohmann::json::parse(*result);
-    if (!json.contains("ilink_response_encode") // todo: check err_code?
-        || !json.at("ilink_response_encode").is_string()) {
-        return std::unexpected(MaiError::ILLEGAL_RESPONSE);
-    }
-    auto proto_str = base64::decode(
-        json.at("ilink_response_encode").get<std::string_view>()
-    );
-    if (!proto_str) {
-        return proto_str;
-    }
-    DBG("got valid ilink response, now deserialize");
-
-    CloudProxyTransferResponse response;
-    if (!response.ParseFromString(*proto_str)) {
-        return std::unexpected(MaiError::FAILED_TO_PARSE_RESPONSE_PROTOBUF);
-    }
-    if (!response.has_payload()
-        || response.payload().size() < CLOUD_PROXY_SHORTCONN_HEADER_SIZE) {
-        return std::unexpected(MaiError::ILLEGAL_RESPONSE);
-    }
-    auto resp_span = std::span(response.payload())
-                         .subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE);
-    DBG("got cloud proxy transfer response {}", string::hex(resp_span));
+    auto resp_span = std::span(*response);
 
     WPKGHeader header;
     if (header.deserialize(resp_span) != 0
@@ -311,10 +211,7 @@ get_oauth_callback_url(std::string_view url) {
     return oauth_response.callback_url();
 }
 
-std::expected<AimeToken, MaiError> aimetoken(std::string_view service_name) {
-    if (auto fail = check(channel)) {
-        return fail;
-    }
+} // namespace
     DBG("called aimetoken(), start oauth process...");
     auto oauth_url = cpr::Get(
         cpr::Url{std::format("{}/{}", TGK_WCAIME_OAUTH_URL, service_name)},
@@ -339,7 +236,7 @@ std::expected<AimeToken, MaiError> aimetoken(std::string_view service_name) {
 
     DBG("ok, start getting cloud_proxy_session_info");
     if (g_cloud_proxy_session_info.empty()) {
-        if (auto session_info = get_cloud_proxy_session_info()) {
+        if (auto session_info = cloud_proxy::auth()) {
             DBG("got valid session info {}", string::hex(*session_info));
             g_cloud_proxy_session_info = *session_info;
         } else {
@@ -372,48 +269,3 @@ std::expected<AimeToken, MaiError> aimetoken(std::string_view service_name) {
 }
 
 } // namespace mai::service
-
-HOOK_DELAYED(
-    run_cloud_proxy_callback,
-    void*             a1,
-    uint32_t          task_id,
-    const LLVMString& content
-) {
-    DBG("run_cloud_proxy_callback, task_id = {}, content = {}",
-        task_id,
-        content.view());
-    if (task_id == MAGIC_TASK_ID) {
-        service::channel.post_message(std::string(content.view()));
-        return;
-    }
-    origin(a1, task_id, content);
-}
-
-HOOK_DELAYED(
-    insert_cloud_proxy_callback,
-    void*    a1,
-    uint32_t task_id,
-    void*    a3
-) {
-    return task_id == MAGIC_TASK_ID ? nullptr : origin(a1, task_id, a3);
-}
-
-/* frida-gum does not allow the same address to be hooked multiple times; we
- * plan to address this issue in the future */
-#include "maiserver_slim.inc"
-
-#if MAI_DEBUG
-#include "maidebug_helper.inc"
-#endif
-
-HOOK(load_wmpf_host_export) {
-    auto ret = origin();
-    HOOK_INSTALL(run_cloud_proxy_callback);
-    HOOK_INSTALL(insert_cloud_proxy_callback);
-#if MAI_DEBUG
-    HOOK_INSTALL(send_cloud_proxy_transfer_request);
-    HOOK_INSTALL(send_cloud_proxy_auth_request);
-#endif
-    HOOK_INSTALL(init_browser);
-    return ret;
-}

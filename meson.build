@@ -40,6 +40,7 @@ sources = files(
     'src/maidebug_helper.cpp',
     'src/maiserver.cpp',
     'src/maiserver_slim.cpp',
+    'src/mem/async_wrapper/cloud_proxy.cpp',
     'src/service/aimetoken.cpp',
     'src/service/qrcode.cpp',
 )
