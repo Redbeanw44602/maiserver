@@ -24,7 +24,7 @@ export MAISERVER_CLOUD_PROXY_DEVICE_ID="$(cat "$DEVICE_ID_FILE")"
 
 Xvfb $DISPLAY -screen 0 1280x800x24 &
 
-x11vnc -display $DISPLAY -forever -shared -nopw -listen localhost -rfbport $VNC_PORT &
+x11vnc -display $DISPLAY -forever -shared -nopw -listen 0.0.0.0 -rfbport $VNC_PORT &
 
 websockify --web /usr/share/novnc $NOVNC_PORT 0.0.0.0:$VNC_PORT &
 

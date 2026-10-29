@@ -42,6 +42,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 COPY --chmod=755 scripts/start_container.sh /start.sh
 
-EXPOSE 8080 6080
+EXPOSE 8080 5900 6080
 VOLUME ["/root"]
 CMD ["/start.sh"]
