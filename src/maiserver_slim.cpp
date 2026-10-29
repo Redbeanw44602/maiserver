@@ -6,7 +6,9 @@
 
 #include "config.h"
 #include "mem/function.h"
+#include "mem/signal.h"
 
+using namespace mai;
 using namespace mai::mem;
 
 HOOK(init_crashpad) {
@@ -31,4 +33,8 @@ HOOK(init_wxplayer_2, void* a1) {
 
 HOOK(init_wxutility, void* a1) {
     if (!g_slim) origin(a1);
+}
+
+static CTOR_PRIORITY_MIDDLE void init() {
+    on_lib_wmpf_host_export_ready.connect([]() { HOOK_INSTALL(init_browser); });
 }

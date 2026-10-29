@@ -10,6 +10,7 @@
 #include "config.h"
 #include "log.h"
 #include "mem/function.h"
+#include "mem/signal.h"
 #include "mem/std_string.h"
 #include "mem/wpkg_header.h"
 #include "util/base64.h"
@@ -116,4 +117,13 @@ HOOK_DELAYED(
         task_id,
         content.view());
     return origin(a1, task_id, content, callback);
+}
+
+static CTOR_PRIORITY_MIDDLE void init() {
+    on_lib_wmpf_host_export_ready.connect([]() {
+#if MAI_DEBUG
+        HOOK_INSTALL(send_cloud_proxy_transfer_request);
+        HOOK_INSTALL(send_cloud_proxy_auth_request);
+#endif
+    });
 }

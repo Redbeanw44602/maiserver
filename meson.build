@@ -29,6 +29,7 @@ pugixml_dep = dependency('pugixml')
 base64_dep = dependency('base64')
 cpr_dep = dependency('cpr')
 date_dep = dependency('date')
+sigslot_dep = dependency('sigslot')
 
 if get_option('debug')
     add_project_arguments('-DMAI_DEBUG', language: ['cpp'])
@@ -36,7 +37,9 @@ endif
 
 includes = include_directories('src')
 sources = files(
+    'src/maidebug_helper.cpp',
     'src/maiserver.cpp',
+    'src/maiserver_slim.cpp',
     'src/service/aimetoken.cpp',
     'src/service/qrcode.cpp',
 )
@@ -58,5 +61,6 @@ shared_library(
         pugixml_dep,
         cpr_dep,
         date_dep,
+        sigslot_dep,
     ],
 )

@@ -9,8 +9,7 @@
 #include "config.h"
 #include "error.h"
 #include "mem/function.h"
-#include "service/aimetoken.h"
-#include "service/qrcode.h"
+#include "mem/signal.h"
 #include "util/base64.h"
 #include "util/env.h"
 #include "util/http_server.h"
@@ -181,7 +180,11 @@ HOOK(set_uin, uint32_t uin) {
     return origin(uin);
 }
 
-__attribute__((constructor)) static void init(void) {
+HOOK(load_wmpf_host_export) {
+    auto ret = origin();
+    on_lib_wmpf_host_export_ready();
+    return ret;
+}
     // Prevent LD_PRELOAD Injection into Child Processes.
     unsetenv("LD_PRELOAD");
 }

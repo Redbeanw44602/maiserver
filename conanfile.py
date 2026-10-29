@@ -17,6 +17,7 @@ class MaiserverConan(ConanFile):
         'base64/0.5.2',
         'cpr/1.14.2',
         'date/3.0.5',
+        'sigslot/1.2.3',
     )
     tool_requires = (
         'meson/1.10.2',
