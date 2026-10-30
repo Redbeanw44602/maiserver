@@ -15,11 +15,13 @@ enum class MaiError {
     NO_ERROR,
     BUSY,
     TIMEOUT,
+    ILLEGAL_REQUEST,
     ILLEGAL_RESPONSE,
     EXPECT_REDIRECT,
     WECHAT_NOT_LOGGED_IN,
     MISSING_SESSION_INFO,
     MISSING_OAUTH_CALLBACK_URL,
+    COMMAND_NOT_FOUND,
     ENVIRONMENT_VARIABLE_NOT_FOUND,
     FAILED_TO_GET_BROWSING_SERVICE,
     FAILED_TO_PARSE_XML_DOCUMENT,
@@ -44,6 +46,8 @@ inline std::string_view to_string(MaiError error) {
         return "Currently busy; there is another request waiting.";
     case MaiError::TIMEOUT:
         return "The request timed out.";
+    case MaiError::ILLEGAL_REQUEST:
+        return "Illegal request.";
     case MaiError::ILLEGAL_RESPONSE:
         return "Unexpected response.";
     case MaiError::EXPECT_REDIRECT:
@@ -52,6 +56,8 @@ inline std::string_view to_string(MaiError error) {
         return "Please log in to WeChat first.";
     case MaiError::MISSING_SESSION_INFO:
         return "Session info is missing in the response.";
+    case MaiError::COMMAND_NOT_FOUND:
+        return "Command not found.";
     case MaiError::ENVIRONMENT_VARIABLE_NOT_FOUND:
         return "Environment variable not found.";
     case MaiError::MISSING_OAUTH_CALLBACK_URL:

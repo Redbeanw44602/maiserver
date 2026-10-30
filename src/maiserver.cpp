@@ -7,6 +7,7 @@
 #include <asio/ip/address.hpp>
 
 #include "api/basic.h"
+#include "api/streaming.h"
 #include "config.h"
 #include "error.h"
 #include "mem/function.h"
@@ -100,8 +101,10 @@ HOOK(main, int argc, char** argv) {
 
     std::println("The device ID is set to: {}", string::hex(config.device_id));
 
-    BasicAPI http_api(config.address, config.port);
-    http_api.start_server();
+    BasicAPI     basic_api(config.address, config.port);
+    StreamingAPI streaming_api;
+    basic_api.start_server();
+    basic_api.upgradable(streaming_api.get_server());
 
     return origin(argc, argv);
 };

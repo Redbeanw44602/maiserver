@@ -38,6 +38,7 @@ endif
 includes = include_directories('src')
 sources = files(
     'src/api/basic.cpp',
+    'src/api/streaming.cpp',
     'src/maidebug_helper.cpp',
     'src/maiserver.cpp',
     'src/maiserver_slim.cpp',

@@ -14,6 +14,8 @@ using namespace mai::service;
 
 namespace mai::api {
 
+namespace {
+
 void endpoint_qrcode(
     std::shared_ptr<HttpServer::Response>                 response_,
     [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
@@ -61,6 +63,8 @@ void endpoint_default(
 ) {
     return response_->write(SimpleWeb::StatusCode::client_error_not_found);
 }
+
+} // namespace
 
 BasicAPI::BasicAPI(std::string address, uint16_t port) {
     using namespace std::placeholders;
