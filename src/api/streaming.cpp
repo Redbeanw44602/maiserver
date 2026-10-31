@@ -27,13 +27,7 @@ void cmd_qrcode([[maybe_unused]] std::string_view path, WsSender& send) {
 void cmd_aimetoken(std::string_view path, WsSender& send) {
     auto service_name = path.substr(path.find_last_of('/') + 1);
     if (auto result = get_aimetoken(service_name)) {
-        // clang-format off
-        send(
-            nlohmann::ordered_json{
-                {"url", result->url}
-            }
-        );
-        // clang-format on
+        send(static_cast<nlohmann::ordered_json>(*result));
     } else {
         send(result.error());
     }

@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <string>
 
+#include <nlohmann/json.hpp>
 #include <sigslot/signal.hpp>
 
 #include "error.h"
@@ -23,6 +24,14 @@ struct MaiQRCode {
 };
 
 using MaiQRCodeOrErr = std::expected<MaiQRCode, MaiError>;
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    MaiQRCode,
+    url,
+    description,
+    maid,
+    expires_in
+);
 
 inline sigslot::signal<MaiQRCodeOrErr> on_qrcode_received;
 

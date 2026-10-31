@@ -22,16 +22,7 @@ void endpoint_qrcode(
 ) {
     HttpResponder response(*response_);
     if (auto result = request_qrcode()) {
-        // clang-format off
-        return response(
-            nlohmann::ordered_json{
-                {"url",         result->url        },
-                {"description", result->description},
-                {"maid",        result->maid       },
-                {"expires_in",  result->expires_in }
-            }
-        );
-        // clang-format on
+        return response(static_cast<nlohmann::ordered_json>(*result));
     } else {
         return response(result.error());
     }
@@ -45,13 +36,7 @@ void endpoint_aimetoken(
     auto          path         = std::string_view(request_->path);
     auto          service_name = path.substr(path.find_last_of('/') + 1);
     if (auto result = get_aimetoken(service_name)) {
-        // clang-format off
-        return response(
-            nlohmann::ordered_json{
-                {"url", result->url}
-            }
-        );
-        // clang-format on
+        return response(static_cast<nlohmann::ordered_json>(*result));
     } else {
         return response(result.error());
     }

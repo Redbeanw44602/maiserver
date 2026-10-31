@@ -8,6 +8,8 @@
 
 #include <string>
 
+#include <nlohmann/json.hpp>
+
 #include "error.h"
 
 namespace mai::service {
@@ -17,6 +19,8 @@ struct AimeToken {
 };
 
 using AimeTokenOrErr = std::expected<AimeToken, MaiError>;
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AimeToken, url);
 
 /* Retrieve the URL with the `t` param included synchronously, which has been
  * authenticated via WeChat OAuth for logging into maimai DX NET / CHUNITHM NET.
