@@ -7,21 +7,35 @@ This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|�
 > [!TIP]
 > Maiserver is still in the very early stages; it may crash or encounter other issues. Feel free to file an issue.
 
+- [What problem does it solve?](#what-problem-does-it-solve)
+- [Pros and Cons](#pros-and-cons)
+- [API Endpoints](#api-endpoints)
+  - [Basic](#basic)
+  - [Streaming](#streaming)
+- [Installation](#installation)
+- [Installation (manually)](#installation-manually)
+  - [Compile Guidelines](#compile-guidelines)
+  - [About the Cloud Proxy Device ID](#about-the-cloud-proxy-device-id)
+  - [About Slim Mode](#about-slim-mode)
+  - [Bwrap](#bwrap)
+- [Available Environment Variables](#available-environment-variables)
+- [License](#license)
+
 ## What problem does it solve?
 
 If you think offering game features on a WeChat service account isn't a problem, then you've come to the wrong place.
 
 - WeChat is actually very difficult to use, but I have no choice but to use it.
 - The Wahlap server is sometimes unstable, but WeChat hasn't handled this very well.
-- AIME has been embedded in the WeChat browser, resulting in a combination of two clunky entities.
+- NET has been embedded in the WeChat browser, resulting in a combination of two clunky entities.
 - If you need to quickly extract `MAID` or `AIMETOKEN`, this plugin can help you (no need to capture packets).
 
 ## Pros and Cons
 
-- Supports unattended operation and provides RESTful endpoints.
+- Supports unattended operation and provides RESTful + Streaming APIs.
 - It does not rely on WMPF[^1], which will save a significant amount of memory.
 - The Linux version of WeChat has difficulty detecting injections, so your account is *relatively* secure.
-- Access the WeChat GUI via [noVNC](https://novnc.com) (Docker Image).
+- Access the WeChat GUI via [noVNC](https://novnc.com) (Integrated inside the Docker image).
 
 But,
 - It cannot bypass WeChat's restriction that allows only one PC login at a time.
@@ -32,17 +46,29 @@ But,
 
 ## API Endpoints
 
-Currently, all APIs are non-reentrant and block until a timeout occurs.
+### Basic
+
+The basic APIs are RESTful, and all API calls are blocking—they wait until a result is returned (or a timeout occurs). They are relatively simple, but may not be suitable in certain scenarios.
 
 - `/api/v1/auth/qrcode` - Generate a Player QR Code
+
+After calling this API, it will wait for 15 seconds. If a response is received from the WeChat server before the timeout, that response will be returned; otherwise, a timeout will be returned. If this API is called multiple times within 15 seconds, all requests will be merged, and the same result will ultimately be returned.
+
+This API shares a timeout timer with the corresponding Streaming API, which means the actual wait time may be less than 15 seconds.
+
 > [!NOTE]
-> If the Wahlap server does not respond, WeChat will stop waiting after 15 seconds.
+> **Why is the timeout 15 seconds?**  
+> According to the [WeChat Service Account development documentation](https://developers.weixin.qq.com/doc/service/guide/product/message/Passive_user_reply_message.html): *If the WeChat server does not receive a response within 5 seconds, it will disconnect and resend the request, retrying a total of 3 times.*
+
+> [!WARNING]
+> This API cannot guarantee that the received QR code remains usable; we recommend using the Streaming API.
+
 ```json
 {
     "code": 0,
     "message": "Success.",
     "data": {
-        "url": "https://wq.wahlap.net/qrcode/req/MAID ...",
+        "url": "https://wq.wahlap.net/qrcode/req/MAID...",
         "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 9/11 16:17",
         "maid": "...",
         "expires_in": 1789114620
@@ -50,10 +76,7 @@ Currently, all APIs are non-reentrant and block until a timeout occurs.
 }
 ```
 
-- `/api/v1/auth/aimetoken` - Get the token URL used to log in to the aime website.
-> [!NOTE]
-> The client must support HTTP/2.  
-> The server will Set-Cookie for the client and redirect it to https://maimai.wahlap.com/maimai-mobile/home/.
+- `/api/v1/auth/aimetoken/maimai-dx` - Get the authorized URL used to log in to the maimai DX NET.
 ```json
 {
     "code": 0,
@@ -62,6 +85,91 @@ Currently, all APIs are non-reentrant and block until a timeout occurs.
         "url": "https://maimai.wahlap.com/maimai-mobile/?t=..."
     }
 }
+```
+
+- `/api/v1/auth/aimetoken/chunithm` - Get the authorized URL used to log in to the CHUNITHM NET.
+```json
+{
+    "code": 0,
+    "message": "Success.",
+    "data": {
+        "url": "https://chunithm.wahlap.com/mobile/?t=..."
+    }
+}
+```
+
+> [!NOTE]
+> **Important Notes Regarding Authorized URLs**
+> 1. The client must support HTTP/2.
+> 2. The browser's `User-Agent` must be set; otherwise, you will be blocked by TencentCloud EdgeOne for 30 minutes. 😅
+> 3. Once a new session begins (by accessing an authorized URL and receiving a successful response), the old session will immediately expire.
+
+ - User agent for WeChat 4.1.13.26 (WeChatAppEx 25806) on Linux
+
+```
+Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63090a13) UnifiedPCLinuxWechat(0xf2741d1a) XWEB/25806 Flue
+```
+
+### Streaming
+
+ - `/api/v1/stream`
+
+The Streaming API complements the Basic API. It has three basic message types. `S` stands for Server, and `C` stands for Client.
+
+ 1. Command Message (C->S) 
+
+To request the server to perform certain operations; currently, the path is identical to that in the Basic API.
+
+```json
+{
+    "path": "/api/v1/...",
+    "echo": 1919810 # non-zero, optional
+}
+```
+
+ 2. Reply Message (S->C)
+
+The server responds to specific client messages; if the client message contains an “echo,” it will be included in the response. Please note that there is no guarantee that all client messages will receive a reply.
+
+```json
+{
+    "type": "reply",
+    "echo": 1919810, # optional
+    "code": 0,
+    "message": "...",
+    "data": { ... }  # optional if code != 0
+}
+```
+
+ 3. Broadcast Message (S->C)
+
+The server broadcasts messages to all connected clients.
+
+```json
+{
+    "type": "broadcast",
+    "sub_type": "...",
+    "data": { ... }
+}
+```
+
+Currently Existing Subtypes
+
+ - `qrcode-received` The WeChat server has pushed a new player QR code.
+
+#### Examples
+
+```
+connected to ws://127.0.0.1:8080/api/v1/stream
+C->S| hello
+S->C| { "type": "reply", "code": 3, "message": "Illegal request." }
+C->S| { "path": "/api/v1/auth/qrcode" }
+S->C| { "type": "broadcast", "sub_type": "qrcode_received", "data": { "url": "https://wq.wahlap.net/qrcode/req/MAID...", "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 10/31 02:35", "maid": "...", "expires_in": 1793385300 } }
+C->S| { "path": "/api/v1/auth/aimetoken/maimai-dx", "echo": 114514 }
+S->C| { "type": "reply", "echo": 114514, "code": 0, "message": "Success.", "data": { "url": "https://maimai.wahlap.com/maimai-mobile/?t=..." } }
+>>> user tapped 'Player QR Code' twice in WeChat on their phone <<<
+S->C| { "type": "broadcast", "sub_type": "qrcode_received", "data": { "url": "https://wq.wahlap.net/qrcode/req/MAID...", "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 11/31 03:35", "maid": "...", "expires_in": 1796067300 } }
+S->C| { "type": "broadcast", "sub_type": "qrcode_received", "data": { "url": "https://wq.wahlap.net/qrcode/req/MAID...", "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 12/31 04:35", "maid": "...", "expires_in": 1798662900 } }
 ```
 
 ## Installation
@@ -94,7 +202,7 @@ NOVNC_PORT=6080
 > Please do **NOT** attempt to expose ports 6080 or 8080 DIRECTLY to the public internet, as this will result in your account credentials being stolen!
 
 <details>
-<summary>Sample 1: Using <strong>Nginx</strong> as a reverse proxy and exposing the service to the public internet via <strong>Cloudflared</strong></summary>
+<summary>Sample: Using Nginx as a reverse proxy and exposing the service to the public internet via Cloudflared</summary>
 
 ### Nginx
 
