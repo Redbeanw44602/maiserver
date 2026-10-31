@@ -129,22 +129,16 @@ StreamingAPI::StreamingAPI() {
     stream_endpoint.on_close   = on_close;
     stream_endpoint.on_message = on_message;
     stream_endpoint.on_error   = on_error;
-    on_qrcode_received.connect([this](const MaiQRCodeOrErr& qrcode_or_err) {
-        if (!qrcode_or_err) {
-            return;
-        }
-        // clang-format off
-        broadcast(
-            "qrcode_received",
-            nlohmann::ordered_json{
-                {"url",         qrcode_or_err->url        },
-                {"description", qrcode_or_err->description},
-                {"maid",        qrcode_or_err->maid       },
-                {"expires_in",  qrcode_or_err->expires_in }
+    on_qrcode_received_connection =
+        on_qrcode_received.connect([this](const MaiQRCodeOrErr& qrcode_or_err) {
+            if (!qrcode_or_err) {
+                return;
             }
-        );
-        // clang-format on
-    });
+            broadcast(
+                "qrcode_received",
+                static_cast<nlohmann::ordered_json>(*qrcode_or_err)
+            );
+        });
 }
 
 WsServer& StreamingAPI::get_server() { return server_; }

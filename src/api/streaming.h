@@ -7,6 +7,7 @@
 #pragma once
 
 #include <nlohmann/json_fwd.hpp>
+#include <sigslot/signal.hpp>
 
 #include "util/simple_web.h"
 
@@ -22,6 +23,8 @@ public:
 
 private:
     WsServer server_;
+
+    sigslot::scoped_connection on_qrcode_received_connection;
 };
 
 } // namespace mai::api
