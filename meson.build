@@ -26,6 +26,7 @@ simple_websocket_server_dep = dependency('simple-websocket-server')
 lz4_dep = dependency('liblz4')
 nlohmann_json_dep = dependency('nlohmann_json')
 pugixml_dep = dependency('pugixml')
+tidy_dep = dependency('tidy')
 base64_dep = dependency('base64')
 cpr_dep = dependency('cpr')
 date_dep = dependency('date')
@@ -45,6 +46,7 @@ sources = files(
     'src/mem/async_wrapper/cloud_proxy.cpp',
     'src/service/aimetoken.cpp',
     'src/service/qrcode.cpp',
+    'src/util/html_parser.cpp',
 )
 
 subdir('src/proto')
@@ -62,6 +64,7 @@ shared_library(
         nlohmann_json_dep,
         base64_dep,
         pugixml_dep,
+        tidy_dep,
         cpr_dep,
         date_dep,
         sigslot_dep,

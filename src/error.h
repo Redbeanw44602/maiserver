@@ -13,7 +13,6 @@ namespace mai {
 
 enum class MaiError {
     NO_ERROR,
-    BUSY,
     TIMEOUT,
     ILLEGAL_REQUEST,
     ILLEGAL_RESPONSE,
@@ -24,6 +23,8 @@ enum class MaiError {
     COMMAND_NOT_FOUND,
     ENVIRONMENT_VARIABLE_NOT_FOUND,
     FAILED_TO_GET_BROWSING_SERVICE,
+    FAILED_TO_TIDY_HTML_DOCUMENT,
+    FAILED_TO_PARSE_HTML_UNEXPECTED_WEBPAGE,
     FAILED_TO_PARSE_XML_DOCUMENT,
     FAILED_TO_PARSE_XML_URL_NOT_FOUND,
     FAILED_TO_PARSE_XML_DESCRIPTION_NOT_FOUND,
@@ -42,8 +43,6 @@ enum class MaiError {
 
 inline std::string_view to_string(MaiError error) {
     switch (error) {
-    case MaiError::BUSY:
-        return "Currently busy; there is another request waiting.";
     case MaiError::TIMEOUT:
         return "The request timed out.";
     case MaiError::ILLEGAL_REQUEST:

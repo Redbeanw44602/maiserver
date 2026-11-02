@@ -14,6 +14,7 @@ class MaiserverConan(ConanFile):
         'lz4/1.10.0',
         'nlohmann_json/3.12.0',
         'pugixml/1.16',
+        'tidy-html5/5.8.0',
         'base64/0.5.2',
         'cpr/1.14.2',
         'date/3.0.5',
