@@ -81,8 +81,10 @@ inline std::string hex(std::span<const char> str) {
     return ret;
 }
 
-template <std::integral T>
-inline std::expected<T, MaiError> to_integer(std::string_view str) {
+template <typename T>
+inline std::expected<T, MaiError> to_numeric(std::string_view str)
+    requires std::is_arithmetic_v<T>
+{
     T ret;
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), ret);
     if (ec == std::errc::invalid_argument) {
@@ -96,5 +98,6 @@ inline std::expected<T, MaiError> to_integer(std::string_view str) {
     }
     return ret;
 }
+
 
 } // namespace mai::util::string

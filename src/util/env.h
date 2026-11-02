@@ -29,7 +29,7 @@ constexpr std::expected<T, MaiError> get(string::Literal name)
           && (!std::is_same_v<std::remove_cv_t<T>, bool>)
 {
     if (auto val = get<std::string>(name)) {
-        return string::to_integer<T>(*val);
+        return string::to_numeric<T>(*val);
     } else {
         return std::unexpected(val.error());
     }
