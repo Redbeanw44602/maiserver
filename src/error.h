@@ -7,6 +7,7 @@
 #pragma once
 
 #include <expected> // IWYU pragma: export
+#include <optional>
 #include <string_view>
 
 namespace mai {
@@ -63,6 +64,10 @@ inline std::string_view to_string(MaiError error) {
         return "OAuth callback url is missing in the response";
     case MaiError::FAILED_TO_GET_BROWSING_SERVICE:
         return "Unable to get the browsing service.";
+    case MaiError::FAILED_TO_TIDY_HTML_DOCUMENT:
+        return "Failed to tidy the HTML document.";
+    case MaiError::FAILED_TO_PARSE_HTML_UNEXPECTED_WEBPAGE:
+        return "Failed to parse HTML; Unexpected webpage.";
     case MaiError::FAILED_TO_PARSE_XML_DOCUMENT:
         return "Failed to parse the XML document.";
     case MaiError::FAILED_TO_PARSE_XML_URL_NOT_FOUND:
@@ -90,6 +95,27 @@ inline std::string_view to_string(MaiError error) {
     default:
         return "Unknown error.";
     }
+}
+
+template <typename E, typename... Ts>
+std::optional<E> check_multiple_expected(std::expected<Ts, E>&... args) {
+    E* first_error = nullptr;
+
+    auto check = [&first_error](auto& arg) -> bool {
+        if (!arg) {
+            first_error = std::addressof(arg.error());
+            return true;
+        }
+        return false;
+    };
+
+    (void)(check(args) || ...);
+
+    if (first_error) {
+        return std::make_optional(std::move(*first_error));
+    }
+
+    return {};
 }
 
 } // namespace mai
