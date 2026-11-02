@@ -99,5 +99,33 @@ inline std::expected<T, MaiError> to_numeric(std::string_view str)
     return ret;
 }
 
+inline std::string_view strip(std::string_view str) {
+    size_t begin = 0;
+    size_t end   = str.size();
+
+    constexpr std::string_view nbsp = "\xC2\xA0";
+
+    while (begin < end) {
+        if (std::isspace(static_cast<unsigned char>(str[begin]))) {
+            ++begin;
+        } else if (str.compare(begin, 2, nbsp) == 0) {
+            begin += 2;
+        } else {
+            break;
+        }
+    }
+
+    while (begin < end) {
+        if (std::isspace(static_cast<unsigned char>(str[end - 1]))) {
+            --end;
+        } else if (end - begin >= 2 && str.compare(end - 2, 2, nbsp) == 0) {
+            end -= 2;
+        } else {
+            break;
+        }
+    }
+
+    return str.substr(begin, end - begin);
+}
 
 } // namespace mai::util::string
