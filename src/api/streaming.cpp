@@ -8,7 +8,6 @@
 
 #include "api/streaming.h"
 #include "log.h"
-#include "service/aimetoken.h"
 #include "service/qrcode.h"
 
 using namespace mai::service;
@@ -20,15 +19,6 @@ namespace {
 void cmd_qrcode([[maybe_unused]] std::string_view path, WsSender& send) {
     auto result = request_qrcode_async();
     if (!result) {
-        send(result.error());
-    }
-}
-
-void cmd_aimetoken(std::string_view path, WsSender& send) {
-    auto service_name = path.substr(path.find_last_of('/') + 1);
-    if (auto result = get_aimetoken(service_name)) {
-        send(static_cast<nlohmann::ordered_json>(*result));
-    } else {
         send(result.error());
     }
 }
@@ -59,9 +49,7 @@ void on_message(
 
     using cmd_callback_t = std::function<void(std::string_view, WsSender&)>;
     static std::unordered_map<std::string_view, cmd_callback_t> commands = {
-        {"/api/v1/auth/qrcode",              cmd_qrcode   },
-        {"/api/v1/auth/aimetoken/maimai-dx", cmd_aimetoken},
-        {"/api/v1/auth/aimetoken/chunithm",  cmd_aimetoken}
+        {"/auth/qrcode", cmd_qrcode}
     };
 
     WsSender send(*connection);

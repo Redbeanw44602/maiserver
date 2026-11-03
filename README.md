@@ -1,6 +1,6 @@
 # Maiserver
 
-This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|中二` service account into a RESTful API, supports low-power devices.
+This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|中二` service account into an HTTP API, supports low-power devices.
 
 > Compatible WeChat Version: **4.1.13.26 (x86_64, arm64)**
 
@@ -48,7 +48,7 @@ But,
 
 ### Basic
 
-The basic APIs are RESTful, and all API calls are blocking—they wait until a result is returned (or a timeout occurs). They are relatively simple, but may not be suitable in certain scenarios.
+The basic APIs are RESTful, and all API calls are blocking.
 
 - `/api/v1/auth/qrcode` - Generate a Player QR Code
 
@@ -58,7 +58,7 @@ This API shares a timeout timer with the corresponding Streaming API, which mean
 
 > [!NOTE]
 > **Why is the timeout 15 seconds?**  
-> According to the [WeChat Service Account development documentation](https://developers.weixin.qq.com/doc/service/guide/product/message/Passive_user_reply_message.html): *If the WeChat server does not receive a response within 5 seconds, it will disconnect and resend the request, retrying a total of 3 times.*
+> According to the [WeChat Service Account development documentation](https://developers.weixin.qq.com/doc/service/guide/product/message/Passive_user_reply_message.html) *"If the WeChat server does not receive a response within 5 seconds, it will disconnect and resend the request, retrying a total of 3 times."*
 
 > [!WARNING]
 > This API cannot guarantee that the received QR code remains usable; we recommend using the Streaming API.
@@ -118,18 +118,18 @@ The Streaming API complements the Basic API. It has three basic message types. `
 
  1. Command Message (C->S) 
 
-To request the server to perform certain operations; currently, the path is identical to that in the Basic API.
+To request the server to perform certain operations.
 
 ```json
 {
-    "path": "/api/v1/...",
+    "path": "/auth/...",
     "echo": 1919810 # non-zero, optional
 }
 ```
 
  2. Reply Message (S->C)
 
-The server responds to specific client messages; if the client message contains an “echo,” it will be included in the response. Please note that there is no guarantee that all client messages will receive a reply.
+The server responds to specific client messages; if the client message contains an "echo," it will be included in the response. Please note that there is no guarantee that all client messages will receive a reply.
 
 ```json
 {
@@ -163,10 +163,8 @@ Currently Existing Subtypes
 connected to ws://127.0.0.1:8080/api/v1/stream
 C->S| hello
 S->C| { "type": "reply", "code": 3, "message": "Illegal request." }
-C->S| { "path": "/api/v1/auth/qrcode" }
+C->S| { "path": "/auth/qrcode" }
 S->C| { "type": "broadcast", "sub_type": "qrcode_received", "data": { "url": "https://wq.wahlap.net/qrcode/req/MAID...", "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 10/31 02:35", "maid": "...", "expires_in": 1793385300 } }
-C->S| { "path": "/api/v1/auth/aimetoken/maimai-dx", "echo": 114514 }
-S->C| { "type": "reply", "echo": 114514, "code": 0, "message": "Success.", "data": { "url": "https://maimai.wahlap.com/maimai-mobile/?t=..." } }
 >>> user tapped 'Player QR Code' twice in WeChat on their phone <<<
 S->C| { "type": "broadcast", "sub_type": "qrcode_received", "data": { "url": "https://wq.wahlap.net/qrcode/req/MAID...", "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 11/31 03:35", "maid": "...", "expires_in": 1796067300 } }
 S->C| { "type": "broadcast", "sub_type": "qrcode_received", "data": { "url": "https://wq.wahlap.net/qrcode/req/MAID...", "description": "把下方二维码对准机台扫描处，可用机台有【舞萌DX】和【中二节奏】\n有效期限 : 12/31 04:35", "maid": "...", "expires_in": 1798662900 } }
