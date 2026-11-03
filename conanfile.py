@@ -19,6 +19,7 @@ class MaiserverConan(ConanFile):
         'cpr/1.14.2',
         'date/3.0.5',
         'sigslot/1.2.3',
+        'reflect-cpp/0.25.0',
     )
     tool_requires = (
         'meson/1.10.2',
@@ -41,3 +42,7 @@ class MaiserverConan(ConanFile):
         if cross_building(self):
             meson.binaries['pkg-config'] = 'pkg-config'
         meson.generate()
+
+    def requirements(self):
+        # https://github.com/hanickadot/compile-time-regular-expressions/issues/307
+        self.requires('ctre/3.11.0', override=True)

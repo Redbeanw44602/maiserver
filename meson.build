@@ -31,6 +31,7 @@ base64_dep = dependency('base64')
 cpr_dep = dependency('cpr')
 date_dep = dependency('date')
 sigslot_dep = dependency('sigslot')
+reflect_cpp_dep = dependency('reflect-cpp')
 
 if get_option('debug')
     add_project_arguments('-DMAI_DEBUG', language: ['cpp'])
@@ -68,5 +69,6 @@ shared_library(
         cpr_dep,
         date_dep,
         sigslot_dep,
+        reflect_cpp_dep,
     ],
 )

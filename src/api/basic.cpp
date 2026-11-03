@@ -6,6 +6,7 @@
 
 #include "api/basic.h"
 
+#include "config.h"
 #include "log.h"
 #include "service/aimetoken.h"
 #include "service/qrcode.h"
@@ -16,50 +17,31 @@ namespace mai::api {
 
 namespace {
 
-void endpoint_qrcode(
-    std::shared_ptr<HttpServer::Response>                 response_,
-    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
-) {
-    HttpResponder response(*response_);
-    if (auto result = request_qrcode()) {
-        return response(static_cast<nlohmann::ordered_json>(*result));
-    } else {
-        return response(result.error());
-    }
-}
-
-void endpoint_aimetoken(
-    std::shared_ptr<HttpServer::Response>                 response_,
-    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
-) {
-    HttpResponder response(*response_);
-    auto          path         = std::string_view(request_->path);
-    auto          service_name = path.substr(path.find_last_of('/') + 1);
-    if (auto result = get_aimetoken(service_name)) {
-        return response(static_cast<nlohmann::ordered_json>(*result));
-    } else {
-        return response(result.error());
-    }
-}
-
-void endpoint_default(
-    std::shared_ptr<HttpServer::Response>                 response_,
-    [[maybe_unused]] std::shared_ptr<HttpServer::Request> request_
-) {
-    return response_->write(SimpleWeb::StatusCode::client_error_not_found);
-}
+#define SIMPLE_HTTP_API(endpoint, backend)                                     \
+    server_.resource["^/api/v1" endpoint "$"]["GET"] =                         \
+        [](std::shared_ptr<HttpServer::Response> response_,                    \
+           std::shared_ptr<HttpServer::Request>) {                             \
+            HttpResponder response(*response_);                                \
+            if (g_uin == 0) {                                                  \
+                response(MaiError::WECHAT_NOT_LOGGED_IN);                      \
+            }                                                                  \
+            response(backend());                                               \
+        }
 
 } // namespace
 
 BasicAPI::BasicAPI(std::string address, uint16_t port) {
     using namespace std::placeholders;
 
-    server_.config.address                    = std::move(address);
-    server_.config.port                       = port;
-    server_.default_resource["GET"]           = endpoint_default;
-    GET("^/api/v1/auth/qrcode$")              = endpoint_qrcode;
-    GET("^/api/v1/auth/aimetoken/maimai-dx$") = endpoint_aimetoken;
-    GET("^/api/v1/auth/aimetoken/chunithm$")  = endpoint_aimetoken;
+    server_.config.address          = std::move(address);
+    server_.config.port             = port;
+    server_.default_resource["GET"] = [](auto response, auto _) {
+        return response->write(SimpleWeb::StatusCode::client_error_not_found);
+    };
+
+    SIMPLE_HTTP_API("/auth/qrcode", request_qrcode);
+    SIMPLE_HTTP_API("/auth/aimetoken/maimai-dx", get_aimetoken_maimai_dx);
+    SIMPLE_HTTP_API("/auth/aimetoken/chunithm", get_aimetoken_chunithm);
 }
 
 BasicAPI::~BasicAPI() { stop_server(); }

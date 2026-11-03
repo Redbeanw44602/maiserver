@@ -6,12 +6,30 @@
 
 #pragma once
 
+#include <expected>
+
 #include <nlohmann/json.hpp>
+#include <rfl.hpp>
+#include <rfl/json.hpp>
 #include <simple-web-server/server_http.hpp>
 #include <simple-websocket-server/server_ws.hpp>
 
 #include "error.h"
 #include "log.h"
+
+namespace mai::util::detail {
+
+template <typename T>
+struct ResponseOk {
+    uint32_t    code;
+    std::string message;
+    T           data;
+};
+
+struct ResponseError {
+    uint32_t    code;
+    std::string message;
+};
 
 template <typename Resp, typename Error>
 class Responder {
@@ -19,41 +37,36 @@ public:
     Responder(Resp& response) : response_(response) {}
 
     void operator()(Error error) {
-        // clang-format off
+        ResponseError obj{
+            static_cast<uint32_t>(error),
+            static_cast<std::string>(to_string(error)),
+        };
         write_response(
             SimpleWeb::StatusCode::server_error_bad_gateway,
-            nlohmann::ordered_json{
-                {"code",    error           },
-                {"message", to_string(error)}
-            }
+            rfl::json::write(obj, rfl::json::pretty)
         );
-        // clang-format on
     }
 
-    void operator()(nlohmann::ordered_json&& data) {
-        // clang-format off
+    template <typename T, typename E>
+    void operator()(std::expected<T, E>&& data) {
+        if (!data.has_value()) {
+            return operator()(data.error());
+        }
+        ResponseOk<T> obj{0, "Success.", std::move(*data)};
         write_response(
             SimpleWeb::StatusCode::success_ok,
-            nlohmann::ordered_json{
-                {"code",    0               },
-                {"message", "Success."      },
-                {"data",    std::move(data) }
-            }
+            rfl::json::write(obj, rfl::json::pretty)
         );
-        // clang-format on
     }
 
 private:
     Resp& response_;
 
-    void write_response(
-        SimpleWeb::StatusCode    status_code,
-        nlohmann::ordered_json&& data
-    ) {
+    void write_response(SimpleWeb::StatusCode code, std::string&& data) {
         // clang-format off
         response_.write(
-            status_code,
-            data.dump(4),
+            code,
+            std::move(data),
             SimpleWeb::CaseInsensitiveMultimap{
                 {"Content-Type", "application/json"}
             }
@@ -124,8 +137,11 @@ private:
     }
 };
 
+} // namespace mai::util::detail
+
 using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
 using WsServer   = SimpleWeb::SocketServer<SimpleWeb::WS>;
 
-using HttpResponder = Responder<HttpServer::Response, mai::MaiError>;
-using WsSender      = Sender<WsServer::Connection, mai::MaiError>;
+using HttpResponder =
+    mai::util::detail::Responder<HttpServer::Response, mai::MaiError>;
+using WsSender = mai::util::detail::Sender<WsServer::Connection, mai::MaiError>;
