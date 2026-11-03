@@ -18,6 +18,7 @@ enum class MaiError {
     ILLEGAL_REQUEST,
     ILLEGAL_RESPONSE,
     EXPECT_REDIRECT,
+    EXPECT_OK,
     WECHAT_NOT_LOGGED_IN,
     MISSING_SESSION_INFO,
     MISSING_OAUTH_CALLBACK_URL,
@@ -40,6 +41,7 @@ enum class MaiError {
     FAILED_TO_CONVERSION_OUT_OF_RANGE,
     FAILED_TO_DECODE_BASE64_INVALID_INPUT,
     FAILED_TO_DECODE_BASE64_DECODER_NOT_FOUND,
+    FAILED_TO_LOGIN_TO_MAIMAI_DX_NET,
 };
 
 inline std::string_view to_string(MaiError error) {
@@ -52,6 +54,8 @@ inline std::string_view to_string(MaiError error) {
         return "Unexpected response.";
     case MaiError::EXPECT_REDIRECT:
         return "Expected a redirect, but didn't get location.";
+    case MaiError::EXPECT_OK:
+        return "An unexpected HTTP code was returned; the request failed.";
     case MaiError::WECHAT_NOT_LOGGED_IN:
         return "Please log in to WeChat first.";
     case MaiError::MISSING_SESSION_INFO:
@@ -92,6 +96,8 @@ inline std::string_view to_string(MaiError error) {
         return "Invalid string; cannot be converted to an integer.";
     case MaiError::FAILED_TO_CONVERSION_OUT_OF_RANGE:
         return "An integer overflow has been detected.";
+    case MaiError::FAILED_TO_LOGIN_TO_MAIMAI_DX_NET:
+        return "Failed to login to maimai DX NET.";
     default:
         return "Unknown error.";
     }

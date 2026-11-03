@@ -24,8 +24,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AimeToken, url);
 
 /* Retrieve the URL with the `t` param included synchronously, which has been
  * authenticated via WeChat OAuth for logging into maimai DX NET / CHUNITHM NET.
- * Known service names: 'maimai-dx', 'chunithm'.
  */
-AimeTokenOrErr get_aimetoken(std::string_view service_name);
+AimeTokenOrErr get_aimetoken_maimai_dx();
+AimeTokenOrErr get_aimetoken_chunithm();
 
 } // namespace mai::service

@@ -212,8 +212,6 @@ get_oauth_callback_url(std::string_view url) {
     return oauth_response.callback_url();
 }
 
-} // namespace
-
 AimeTokenOrErr get_aimetoken(std::string_view service_name) {
     DBG("called aimetoken(), start oauth process...");
     if (g_uin == 0) {
@@ -274,5 +272,11 @@ AimeTokenOrErr get_aimetoken(std::string_view service_name) {
     DBG("success!");
     return AimeToken{callback_url.header.at("location")};
 }
+
+} // namespace
+
+AimeTokenOrErr get_aimetoken_maimai_dx() { return get_aimetoken("maimai-dx"); }
+
+AimeTokenOrErr get_aimetoken_chunithm() { return get_aimetoken("chunithm"); }
 
 } // namespace mai::service
