@@ -10,6 +10,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "error.h"
 
@@ -126,6 +127,30 @@ inline std::string_view strip(std::string_view str) {
     }
 
     return str.substr(begin, end - begin);
+}
+
+inline std::vector<std::string_view>
+split_view(std::string_view str, std::string_view delimiter) {
+    if (delimiter.empty()) {
+        return {};
+    }
+
+    std::vector<std::string_view> result;
+    std::size_t                   start = 0;
+
+    while (true) {
+        const auto pos = str.find(delimiter, start);
+
+        if (pos == std::string_view::npos) {
+            result.emplace_back(str.substr(start));
+            break;
+        }
+
+        result.emplace_back(str.substr(start, pos - start));
+        start = pos + delimiter.size();
+    }
+
+    return result;
 }
 
 } // namespace mai::util::string
