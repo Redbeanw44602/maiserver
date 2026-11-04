@@ -46,6 +46,7 @@ sources = files(
     'src/maiserver_slim.cpp',
     'src/mem/async_wrapper/cloud_proxy.cpp',
     'src/service/aimetoken.cpp',
+    'src/service/maimai-dx/home/home.cpp',
     'src/service/maimai-dx/home/rating_target_music.cpp',
     'src/service/maimai-dx/session.cpp',
     'src/service/qrcode.cpp',

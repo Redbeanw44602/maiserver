@@ -9,6 +9,7 @@
 #include "config.h"
 #include "log.h"
 #include "service/aimetoken.h"
+#include "service/maimai-dx/home/home.h"
 #include "service/maimai-dx/home/rating_target_music.h"
 #include "service/qrcode.h"
 
@@ -43,7 +44,7 @@ BasicAPI::BasicAPI(std::string address, uint16_t port) {
     SIMPLE_HTTP_API("/auth/qrcode", request_qrcode);
     SIMPLE_HTTP_API("/auth/aimetoken/maimai-dx", get_aimetoken_maimai_dx);
     SIMPLE_HTTP_API("/auth/aimetoken/chunithm", get_aimetoken_chunithm);
-    SIMPLE_HTTP_API("/maimai-dx/rating/detail", get_rating_detail);
+    SIMPLE_HTTP_API("/maimai-dx/player/info", get_player_information);
 }
 
 BasicAPI::~BasicAPI() { stop_server(); }
