@@ -45,6 +45,7 @@ BasicAPI::BasicAPI(std::string address, uint16_t port) {
     SIMPLE_HTTP_API("/auth/aimetoken/maimai-dx", get_aimetoken_maimai_dx);
     SIMPLE_HTTP_API("/auth/aimetoken/chunithm", get_aimetoken_chunithm);
     SIMPLE_HTTP_API("/maimai-dx/player/info", get_player_information);
+    SIMPLE_HTTP_API("/maimai-dx/player/rating", get_rating_detail);
 }
 
 BasicAPI::~BasicAPI() { stop_server(); }

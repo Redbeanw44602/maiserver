@@ -4,9 +4,8 @@
  * This file is part of the Maibox open source project.
  */
 
+#include "service/maimai-dx/home/rating_target_music.h"
 #include "service/maimai-dx/helper.h"
-#include "service/maimai-dx/session.h"
-#include "util/html_parser.h"
 
 using namespace mai::util;
 
@@ -17,11 +16,11 @@ namespace {
 std::expected<RatingDetail, MaiError> parse(std::string&& html) {
     auto xml_doc = parse_html(std::move(html));
     if (!xml_doc) {
-        return std::unexpected(xml_doc.error());
+        UNEXPECTED_WEBPAGE_WITH_ERR(xml_doc);
     }
 
     auto nodes = xml_doc->select_nodes(
-        "/html/body/div[@class=\"wrapper main_wrapper t_c o_v\"]/div"
+        "//div[@class=\"wrapper main_wrapper t_c o_v\"]/div"
     );
 
     RatingDetail                      result;
@@ -54,19 +53,22 @@ std::expected<RatingDetail, MaiError> parse(std::string&& html) {
             auto level_str = std::string_view(form.find_child_by_attribute("class", "music_lv_block f_r t_c f_14").text().as_string());
             auto name = form.find_child_by_attribute("class", "music_name_block t_l f_13 break").text().as_string();
             auto score_str = string::strip(std::string_view(form.find_child_by_attribute("class", "music_score_block w_150 t_l f_r f_12 p_r").text().as_string()));
-            auto id = form.child("input").attribute("value").as_string();
+            auto id = std::string(form.child("input").attribute("value").as_string());
             // clang-format on
             auto difficulty = score_difficulty_from_url(difficulty_img);
             auto kind       = score_kind_from_url(kind_img);
             auto level      = score_level_from_str(level_str);
             auto score      = score_from_str(score_str);
+            if (id.empty()) {
+                UNEXPECTED_WEBPAGE;
+            }
             if (auto error =
                     check_multiple_expected(difficulty, kind, level, score)) {
                 return std::unexpected(*error);
             }
             music_vec->emplace_back(
                 RatingDetail::Music{
-                    id,
+                    std::move(id),
                     name,
                     *kind,
                     *difficulty,
@@ -76,6 +78,13 @@ std::expected<RatingDetail, MaiError> parse(std::string&& html) {
             );
         }
     }
+
+    if (result.best_15.size() != 15 || result.best_35.size() != 35
+        || result.candidate_best_15.empty()
+        || result.candidate_best_35.empty()) {
+        UNEXPECTED_WEBPAGE;
+    }
+
     return result;
 }
 
@@ -84,7 +93,7 @@ std::expected<RatingDetail, MaiError> parse(std::string&& html) {
 std::expected<RatingDetail, MaiError> get_rating_detail() {
     auto webpage = session::simple_get(url::HOME_RATING_TARGET_MUSIC);
     if (!webpage) {
-        return std::unexpected(webpage.error());
+        UNEXPECTED_WEBPAGE_WITH_ERR(webpage);
     }
     return parse(std::move(*webpage));
 }
