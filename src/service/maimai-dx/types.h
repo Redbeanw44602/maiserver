@@ -49,7 +49,7 @@ struct RatingDetail {
         std::string     name;
         ScoreKind       kind;
         ScoreDifficulty difficulty;
-        ScoreLevel      level;
+        std::string     level;
         double          score;
     };
     std::vector<Music> best_15;

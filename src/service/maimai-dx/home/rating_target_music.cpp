@@ -48,33 +48,29 @@ std::expected<RatingDetail, MaiError> parse(std::string&& html) {
         if (music_vec && class_name.starts_with("music_")) {
             auto form = node.child("form");
             // clang-format off
-            auto difficulty_img = std::string_view(form.find_child_by_attribute("class", "h_20 f_l").attribute("src").as_string());
-            auto kind_img = std::string_view(form.find_child_by_attribute("class", "music_kind_icon f_r").attribute("src").as_string());
-            auto level_str = std::string_view(form.find_child_by_attribute("class", "music_lv_block f_r t_c f_14").text().as_string());
+            auto difficulty_img = form.find_child_by_attribute("class", "h_20 f_l").attribute("src").as_string();
+            auto kind_img = form.find_child_by_attribute("class", "music_kind_icon f_r").attribute("src").as_string();
+            auto level = std::string(form.find_child_by_attribute("class", "music_lv_block f_r t_c f_14").text().as_string());
             auto name = form.find_child_by_attribute("class", "music_name_block t_l f_13 break").text().as_string();
-            auto score_str = string::strip(std::string_view(form.find_child_by_attribute("class", "music_score_block w_150 t_l f_r f_12 p_r").text().as_string()));
+            auto score_str = string::strip(form.find_child_by_attribute("class", "music_score_block w_150 t_l f_r f_12 p_r").text().as_string());
             auto id = std::string(form.child("input").attribute("value").as_string());
             // clang-format on
             auto difficulty = score_difficulty_from_url(difficulty_img);
             auto kind       = score_kind_from_url(kind_img);
-            auto level      = score_level_from_str(level_str);
             auto score      = score_from_str(score_str);
-            if (id.empty()) {
+            if (id.empty() || level.empty()) {
                 UNEXPECTED_WEBPAGE;
             }
-            if (auto error =
-                    check_multiple_expected(difficulty, kind, level, score)) {
+            if (auto error = check_multiple_expected(difficulty, kind, score)) {
                 return std::unexpected(*error);
             }
             music_vec->emplace_back(
-                RatingDetail::Music{
-                    std::move(id),
-                    name,
-                    *kind,
-                    *difficulty,
-                    *level,
-                    *score
-                }
+                std::move(id),
+                name,
+                *kind,
+                *difficulty,
+                std::move(level),
+                *score
             );
         }
     }

@@ -65,25 +65,6 @@ score_kind_from_url(std::string_view url) {
     }
 }
 
-inline std::expected<ScoreLevel, MaiError>
-score_level_from_str(std::string_view str) { // 12, 12+, 12+?
-    ScoreLevel result{};
-    if (str.ends_with("?")) {
-        result.is_unknown = true;
-        str.remove_suffix(1);
-    }
-    if (str.ends_with("+")) {
-        result.is_plus = true;
-        str.remove_suffix(1);
-    }
-    auto level = util::string::to_numeric<uint32_t>(str);
-    if (!level) {
-        UNEXPECTED_WEBPAGE_WITH_ERR(level);
-    }
-    result.level_num = *level;
-    return result;
-}
-
 inline std::expected<double, MaiError> score_from_str(std::string_view str) {
     str.remove_suffix(1); // %
     auto result = util::string::to_numeric<double>(str);
