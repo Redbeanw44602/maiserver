@@ -73,6 +73,13 @@ inline std::string_view right(std::string_view text, std::string_view left) {
     return text.substr(begin + left.size());
 }
 
+inline std::string_view left(std::string_view text, std::string_view right) {
+    const auto end = text.find(right);
+    if (end == std::string_view::npos) return {};
+
+    return text.substr(0, end);
+}
+
 inline std::string hex(std::span<const char> str) {
     std::string ret;
     ret.reserve(str.size() * 2);

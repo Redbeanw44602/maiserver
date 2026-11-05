@@ -33,6 +33,7 @@ std::expected<pugi::xml_document, MaiError> parse_html(std::string&& html) {
         tidyRelease(tidy_doc);
         return std::unexpected(MaiError::FAILED_TO_TIDY_HTML_DOCUMENT);
     }
+    DBG("Tidy output:\n{}", std::string_view((char*)out_buf.bp, out_buf.size));
     pugi::xml_document xml_doc;
     auto               result = xml_doc.load_buffer(out_buf.bp, out_buf.size);
     if (out_buf.allocated) tidyBufFree(&out_buf);

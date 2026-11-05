@@ -27,10 +27,21 @@ enum class ClassRank {
 };
 // clang-format on
 
-struct ScoreLevel {
-    uint32_t level_num;
-    bool     is_plus;
-    bool     is_unknown;
+enum class SingleplayerBonus {
+    NONE,
+    FULL_COMBO,
+    FULL_COMBO_PLUS,
+    ALL_PERFECT,
+    ALL_PERFECT_PLUS
+};
+
+enum class MultiplayerBonus {
+    NONE,
+    SYNC_PLAY,
+    FULL_SYNC,
+    FULL_SYNC_PLUS,
+    FULL_SYNC_DX,
+    FULL_SYNC_DX_PLUS
 };
 
 struct PlayerInformation {
@@ -56,6 +67,26 @@ struct RatingDetail {
     std::vector<Music> best_35;
     std::vector<Music> candidate_best_15;
     std::vector<Music> candidate_best_35;
+};
+
+struct RecordDetail {
+    struct Level {
+        std::string       level;
+        double            score;
+        uint32_t          dx_score;
+        uint32_t          dx_score_full;
+        uint32_t          dx_star;
+        SingleplayerBonus singleplayer_bonus;
+        MultiplayerBonus  multiplayer_bonus;
+        std::string       last_play_time; // 'YYYY-mm-dd HH:MM:SS'
+        uint32_t          play_count;
+    };
+    std::string        name;
+    std::string        description;
+    std::string        cover_url;
+    ScoreKind          kind;
+    std::string        category;
+    std::vector<Level> levels;
 };
 
 } // namespace mai::service

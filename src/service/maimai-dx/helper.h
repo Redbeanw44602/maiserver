@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include "error.h"
 #include "log.h"
 #include "service/maimai-dx/types.h"
@@ -26,16 +28,24 @@ constexpr auto BROWSER_USER_AGENT =
 namespace url {
 constexpr auto HOME = "https://maimai.wahlap.com/maimai-mobile/home/";
 constexpr auto HOME_RATING_TARGET_MUSIC = "https://maimai.wahlap.com/maimai-mobile/home/ratingTargetMusic/";
+constexpr auto HOME_RECORD_MUSIC_DETAIL = "https://maimai.wahlap.com/maimai-mobile/record/musicDetail/";
 }
 // clang-format on
 
+#define RETURN_UNEXPECTED_WEBPAGE                                              \
+    return std::unexpected(MaiError::FAILED_TO_PARSE_HTML_UNEXPECTED_WEBPAGE)
+
 #define UNEXPECTED_WEBPAGE_WITH_ERR(x)                                         \
     DBG("unexpected webpage! error: {}", to_string(x.error()));                \
-    return std::unexpected(MaiError::FAILED_TO_PARSE_HTML_UNEXPECTED_WEBPAGE)
+    RETURN_UNEXPECTED_WEBPAGE
+
+#define UNEXPECTED_WEBPAGE_WITH_ERR_R(x)                                       \
+    DBG("unexpected webpage! error: {}", to_string(x));                        \
+    RETURN_UNEXPECTED_WEBPAGE
 
 #define UNEXPECTED_WEBPAGE                                                     \
     DBG("unexpected webpage!");                                                \
-    return std::unexpected(MaiError::FAILED_TO_PARSE_HTML_UNEXPECTED_WEBPAGE)
+    RETURN_UNEXPECTED_WEBPAGE
 
 inline std::expected<ScoreDifficulty, MaiError>
 score_difficulty_from_url(std::string_view url) {
@@ -225,6 +235,71 @@ class_rank_from_url(std::string_view url) {
         return it->second;
     }
     UNEXPECTED_WEBPAGE;
+}
+
+inline std::expected<SingleplayerBonus, MaiError>
+singleplayer_bonus_from_url(std::string_view url) {
+    auto music_icon =
+        util::string::middle(url, "/music_icon_", ".png"); // ?ver=1.55
+    if (music_icon == "back") {
+        return SingleplayerBonus::NONE;
+    } else if (music_icon == "fc") {
+        return SingleplayerBonus::FULL_COMBO;
+    } else if (music_icon == "fcp") {
+        return SingleplayerBonus::FULL_COMBO_PLUS;
+    } else if (music_icon == "ap") {
+        return SingleplayerBonus::ALL_PERFECT;
+    } else if (music_icon == "app") {
+        return SingleplayerBonus::ALL_PERFECT_PLUS;
+    } else {
+        UNEXPECTED_WEBPAGE;
+    }
+}
+
+inline std::expected<MultiplayerBonus, MaiError>
+multiplayer_bonus_from_url(std::string_view url) {
+    auto music_icon =
+        util::string::middle(url, "/music_icon_", ".png"); // ?ver=1.55
+    if (music_icon == "back") {
+        return MultiplayerBonus::NONE;
+    } else if (music_icon == "sync") {
+        return MultiplayerBonus::SYNC_PLAY;
+    } else if (music_icon == "fs") {
+        return MultiplayerBonus::FULL_SYNC;
+    } else if (music_icon == "fsp") {
+        return MultiplayerBonus::FULL_SYNC_PLUS;
+    } else if (music_icon == "fsd") {
+        return MultiplayerBonus::FULL_SYNC_DX;
+    } else if (music_icon == "fsdp") {
+        return MultiplayerBonus::FULL_SYNC_DX_PLUS;
+    } else {
+        UNEXPECTED_WEBPAGE;
+    }
+}
+
+inline std::expected<std::tuple<uint32_t, uint32_t>, MaiError>
+dx_score_from_str(std::string str) { // 968 / 1,062
+    using namespace util::string;
+    std::erase_if(str, [](char chr) { return chr == ','; });
+    auto score      = to_numeric<uint32_t>(left(str, " / "));
+    auto score_full = to_numeric<uint32_t>(right(str, " / "));
+    if (auto error = check_multiple_expected(score, score_full)) {
+        UNEXPECTED_WEBPAGE_WITH_ERR_R(*error);
+    }
+    return std::make_tuple(*score, *score_full);
+}
+
+inline std::expected<uint32_t, MaiError> dx_star_from_url(std::string url) {
+    if (url.empty()) {
+        return 0;
+    }
+    auto stars_str =
+        util::string::middle(url, "/music_icon_dxstar_detail_", ".png");
+    auto stars = util::string::to_numeric<uint32_t>(stars_str);
+    if (!stars) {
+        UNEXPECTED_WEBPAGE_WITH_ERR(stars);
+    }
+    return stars;
 }
 
 } // namespace mai::service

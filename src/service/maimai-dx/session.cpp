@@ -4,12 +4,10 @@
  * This file is part of the Maibox open source project.
  */
 
-#include <cpr/cpr.h>
-
+#include "service/maimai-dx/session.h"
 #include "log.h"
 #include "service/aimetoken.h"
 #include "service/maimai-dx/helper.h"
-#include "service/maimai-dx/session.h"
 #include "util/string.h"
 
 using namespace mai::util;
@@ -21,13 +19,17 @@ namespace {
 static std::mutex   mutex_;
 static cpr::Session session_;
 
-cpr::Response get(std::string_view url, bool follow_redirect = true) {
+cpr::Response
+get(std::string_view  url,
+    bool              follow_redirect = true,
+    cpr::Parameters&& parameters      = {}) {
     static const cpr::UserAgent ua = BROWSER_USER_AGENT;
     session_.RemoveContent();
     session_.GetHeader().clear();
     session_.SetUserAgent(ua);
     session_.SetUrl(cpr::Url{url});
     session_.SetRedirect(cpr::Redirect{follow_redirect});
+    session_.SetParameters(std::move(parameters));
     return session_.Get();
 }
 
@@ -81,13 +83,17 @@ std::expected<void, MaiError> prepare_session() {
 
 } // namespace
 
-std::expected<std::string, MaiError> simple_get(std::string_view url) {
+std::expected<std::string, MaiError> simple_get(
+    std::string_view  url,
+    bool              follow_redirect,
+    cpr::Parameters&& parameters
+) {
     std::lock_guard lock(mutex_);
     auto            result = prepare_session();
     if (!result) {
         return std::unexpected(result.error());
     }
-    auto response = get(url);
+    auto response = get(url, follow_redirect, std::move(parameters));
     if (response.status_code != 200) {
         DBG("simple get failed with status code: {}", response.status_code);
         return std::unexpected(MaiError::EXPECT_OK);

@@ -6,10 +6,16 @@
 
 #pragma once
 
+#include <cpr/cpr.h>
+
 #include "error.h"
 
 namespace mai::service::session {
 
-std::expected<std::string, MaiError> simple_get(std::string_view url);
+std::expected<std::string, MaiError> simple_get(
+    std::string_view  url,
+    bool              follow_redirect = true,
+    cpr::Parameters&& parameters      = {}
+);
 
 }

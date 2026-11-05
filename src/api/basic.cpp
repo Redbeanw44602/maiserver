@@ -11,6 +11,7 @@
 #include "service/aimetoken.h"
 #include "service/maimai-dx/home/home.h"
 #include "service/maimai-dx/home/rating_target_music.h"
+#include "service/maimai-dx/record/music_detail.h"
 #include "service/qrcode.h"
 
 using namespace mai::service;
@@ -19,16 +20,37 @@ namespace mai::api {
 
 namespace {
 
-#define SIMPLE_HTTP_API(endpoint, backend)                                     \
+#define HTTP_API_CHECK_UIN                                                     \
+    HttpResponder response(*response_);                                        \
+    if (g_uin == 0) {                                                          \
+        response(MaiError::WECHAT_NOT_LOGGED_IN);                              \
+    }
+
+#define HTTP_API(endpoint, backend)                                            \
     server_.resource["^/api/v1" endpoint "$"]["GET"] =                         \
         [](std::shared_ptr<HttpServer::Response> response_,                    \
            std::shared_ptr<HttpServer::Request>) {                             \
-            HttpResponder response(*response_);                                \
-            if (g_uin == 0) {                                                  \
-                response(MaiError::WECHAT_NOT_LOGGED_IN);                      \
-            }                                                                  \
+            HTTP_API_CHECK_UIN                                                 \
             response(backend());                                               \
         }
+
+#define HTTP_API_A(endpoint, backend)                                          \
+    server_.resource["^/api/v1" endpoint "$"]["GET"] =                         \
+        [](std::shared_ptr<HttpServer::Response> response_,                    \
+           std::shared_ptr<HttpServer::Request>  request_) {                   \
+            HTTP_API_CHECK_UIN                                                 \
+            response(backend(request_->parse_query_string()));                 \
+        }
+
+using QueryArgs = SimpleWeb::CaseInsensitiveMultimap const&;
+
+std::expected<RecordDetail, MaiError>
+adapter__get_record_detail(QueryArgs args) {
+    auto id = args.find("id");
+
+    return id != args.end() ? get_record_detail(id->second)
+                            : std::unexpected(MaiError::MISSING_REQUIRED_ARG);
+}
 
 } // namespace
 
@@ -41,11 +63,12 @@ BasicAPI::BasicAPI(std::string address, uint16_t port) {
         return response->write(SimpleWeb::StatusCode::client_error_not_found);
     };
 
-    SIMPLE_HTTP_API("/auth/qrcode", request_qrcode);
-    SIMPLE_HTTP_API("/auth/aimetoken/maimai-dx", get_aimetoken_maimai_dx);
-    SIMPLE_HTTP_API("/auth/aimetoken/chunithm", get_aimetoken_chunithm);
-    SIMPLE_HTTP_API("/maimai-dx/player/info", get_player_information);
-    SIMPLE_HTTP_API("/maimai-dx/player/rating", get_rating_detail);
+    HTTP_API("/auth/qrcode", request_qrcode);
+    HTTP_API("/auth/aimetoken/maimai-dx", get_aimetoken_maimai_dx);
+    HTTP_API("/auth/aimetoken/chunithm", get_aimetoken_chunithm);
+    HTTP_API("/maimai-dx/player/info", get_player_information);
+    HTTP_API("/maimai-dx/player/rating", get_rating_detail);
+    HTTP_API_A("/maimai-dx/player/record/music", adapter__get_record_detail);
 }
 
 BasicAPI::~BasicAPI() { stop_server(); }

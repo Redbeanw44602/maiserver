@@ -22,7 +22,9 @@ enum class MaiError {
     WECHAT_NOT_LOGGED_IN,
     MISSING_SESSION_INFO,
     MISSING_OAUTH_CALLBACK_URL,
+    MISSING_REQUIRED_ARG,
     COMMAND_NOT_FOUND,
+    RECORD_NOT_FOUND,
     ENVIRONMENT_VARIABLE_NOT_FOUND,
     FAILED_TO_GET_BROWSING_SERVICE,
     FAILED_TO_TIDY_HTML_DOCUMENT,
@@ -66,6 +68,8 @@ inline std::string_view to_string(MaiError error) {
         return "Environment variable not found.";
     case MaiError::MISSING_OAUTH_CALLBACK_URL:
         return "OAuth callback url is missing in the response";
+    case MaiError::MISSING_REQUIRED_ARG:
+        return "Missing required arguments!";
     case MaiError::FAILED_TO_GET_BROWSING_SERVICE:
         return "Unable to get the browsing service.";
     case MaiError::FAILED_TO_TIDY_HTML_DOCUMENT:
