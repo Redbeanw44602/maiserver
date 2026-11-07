@@ -268,9 +268,9 @@ multiplayer_bonus_from_url(std::string_view url) {
         return MultiplayerBonus::FULL_SYNC;
     } else if (music_icon == "fsp") {
         return MultiplayerBonus::FULL_SYNC_PLUS;
-    } else if (music_icon == "fsd") {
+    } else if (music_icon == "fdx") {
         return MultiplayerBonus::FULL_SYNC_DX;
-    } else if (music_icon == "fsdp") {
+    } else if (music_icon == "fdxp") {
         return MultiplayerBonus::FULL_SYNC_DX_PLUS;
     } else {
         UNEXPECTED_WEBPAGE;

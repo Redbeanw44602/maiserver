@@ -32,6 +32,12 @@ std::expected<PlayerInformation, MaiError> parse(std::string&& html) {
     auto class_rank_url = std::string_view(basic_node.select_node(".//img[@class=\"p_l_10 h_35 f_l\"]").node().attribute("src").as_string());
     // clang-format on
 
+    DBG("name='{}',trophy='{}',dx_rating_str='{}',star_count_str='{}'",
+        name,
+        trophy,
+        dx_rating_str,
+        star_count_str);
+
     auto dx_rating   = string::to_numeric<uint32_t>(dx_rating_str);
     auto star_count  = star_count_from_str(star_count_str);
     auto course_rank = course_rank_from_url(course_rank_url);
