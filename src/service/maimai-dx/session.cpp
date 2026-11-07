@@ -20,16 +20,19 @@ static std::mutex   mutex_;
 static cpr::Session session_;
 
 cpr::Response
-get(std::string_view  url,
-    bool              follow_redirect = true,
-    cpr::Parameters&& parameters      = {}) {
+get(std::string_view       url,
+    bool                   follow_redirect = true,
+    const cpr::Parameters& parameters      = {}) {
     static const cpr::UserAgent ua = BROWSER_USER_AGENT;
     session_.RemoveContent();
     session_.GetHeader().clear();
     session_.SetUserAgent(ua);
     session_.SetUrl(cpr::Url{url});
     session_.SetRedirect(cpr::Redirect{follow_redirect});
-    session_.SetParameters(std::move(parameters));
+    session_.SetParameters(parameters);
+#if MAI_DEBUG
+    session_.SetVerbose(cpr::Verbose{true});
+#endif
     return session_.Get();
 }
 
@@ -43,7 +46,8 @@ bool has_cookie(std::string_view name) {
         while (each) {
             auto cookie = string::split_view(each->data, "\t");
             each        = each->next;
-            if (cookie.size() != 7 && cookie[5] == name) {
+            DBG("cookie: {}", cookie);
+            if (cookie.size() == 7 && cookie[5] == name) {
                 return true;
             }
         }
@@ -51,8 +55,6 @@ bool has_cookie(std::string_view name) {
     }
     return false;
 }
-
-bool is_session_valid() { return get(url::HOME, false).status_code == 200; }
 
 std::expected<void, MaiError> login() {
     auto token = get_aimetoken_maimai_dx();
@@ -70,8 +72,8 @@ std::expected<void, MaiError> login() {
     return {};
 }
 
-std::expected<void, MaiError> prepare_session() {
-    if (!has_cookie("friendCodeList") || !is_session_valid()) {
+std::expected<void, MaiError> prepare_session(bool force_refresh_cookie) {
+    if (force_refresh_cookie || !has_cookie("friendCodeList")) {
         DBG("session invalid, trying to login...");
         auto result = login();
         if (!result) {
@@ -84,16 +86,23 @@ std::expected<void, MaiError> prepare_session() {
 } // namespace
 
 std::expected<std::string, MaiError> simple_get(
-    std::string_view  url,
-    bool              follow_redirect,
-    cpr::Parameters&& parameters
+    std::string_view       url,
+    bool                   follow_redirect,
+    const cpr::Parameters& parameters,
+    bool                   force_refresh_cookie
 ) {
     std::lock_guard lock(mutex_);
-    auto            result = prepare_session();
+    auto            result = prepare_session(force_refresh_cookie);
     if (!result) {
         return std::unexpected(result.error());
     }
-    auto response = get(url, follow_redirect, std::move(parameters));
+    auto response = get(url, follow_redirect, parameters);
+    if (!force_refresh_cookie
+        && std::string_view(response.url.c_str())
+               .ends_with("/maimai-mobile/logout/")) {
+        DBG("invalid session detected, retry...");
+        return simple_get(url, follow_redirect, parameters, true);
+    }
     if (response.status_code != 200) {
         DBG("simple get failed with status code: {}", response.status_code);
         return std::unexpected(MaiError::EXPECT_OK);
