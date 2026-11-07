@@ -86,7 +86,7 @@ inline std::expected<double, MaiError> score_from_str(std::string_view str) {
 
 inline std::expected<uint32_t, MaiError>
 star_count_from_str(std::string_view str) {
-    str.remove_prefix(2); // '×' utf8 (0xC3 0x97)
+    util::string::remove_prefix(str, "\xc3\x97"); // utf8: '×'
     auto result = util::string::to_numeric<uint32_t>(str);
     if (!result) {
         UNEXPECTED_WEBPAGE_WITH_ERR(result);

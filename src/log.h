@@ -23,7 +23,7 @@ void print_debug_string(
     using namespace util::string;
     std::println(
         "[maiserver:debug] {}:{} `{}`: {}",
-        remove_prefix(location.file_name(), "../src/"),
+        remove_prefix_r(location.file_name(), "../src/"),
         location.line(),
         function_name,
         std::format(fmt, std::forward<Args>(args)...)

@@ -160,8 +160,15 @@ split_view(std::string_view str, std::string_view delimiter) {
     return result;
 }
 
+inline void remove_prefix(std::string_view& str, std::string_view pfx) {
+    if (str.starts_with(pfx)) {
+        str.remove_prefix(pfx.size());
+    }
+}
+
+
 inline std::string_view
-remove_prefix(std::string_view str, std::string_view pfx) {
+remove_prefix_r(std::string_view str, std::string_view pfx) {
     if (str.starts_with(pfx)) {
         str.remove_prefix(pfx.size());
     }
