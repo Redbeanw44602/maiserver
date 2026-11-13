@@ -12,6 +12,7 @@
 #include "service/maimai-dx/home/home.h"
 #include "service/maimai-dx/home/rating_target_music.h"
 #include "service/maimai-dx/record/music_detail.h"
+#include "service/maimai-dx/reverse_proxy.h"
 #include "service/qrcode.h"
 
 using namespace mai::service;
@@ -27,7 +28,7 @@ namespace {
     }
 
 #define HTTP_API(endpoint, backend)                                            \
-    server_.resource["^/api/v1" endpoint "$"]["GET"] =                         \
+    server_.resource["/api/v1" endpoint]["GET"] =                              \
         [](std::shared_ptr<HttpServer::Response> response_,                    \
            std::shared_ptr<HttpServer::Request>) {                             \
             HTTP_API_CHECK_UIN                                                 \
@@ -35,12 +36,15 @@ namespace {
         }
 
 #define HTTP_API_A(endpoint, backend)                                          \
-    server_.resource["^/api/v1" endpoint "$"]["GET"] =                         \
+    server_.resource["/api/v1" endpoint]["GET"] =                              \
         [](std::shared_ptr<HttpServer::Response> response_,                    \
            std::shared_ptr<HttpServer::Request>  request_) {                   \
             HTTP_API_CHECK_UIN                                                 \
             response(backend(request_->parse_query_string()));                 \
         }
+
+#define HTTP_API_R(endpoint)                                                   \
+    register_reverse_proxy(server_, "/api/v1" endpoint);
 
 using QueryArgs = SimpleWeb::CaseInsensitiveMultimap const&;
 
@@ -70,6 +74,7 @@ BasicAPI::BasicAPI(std::string address, uint16_t port) {
     HTTP_API("/maimai-dx/player/info", get_player_information);
     HTTP_API("/maimai-dx/player/rating", get_rating_detail);
     HTTP_API_A("/maimai-dx/player/record/music", adapter__get_record_detail);
+    HTTP_API_R("/maimai-dx/reverse-proxy")
 }
 
 BasicAPI::~BasicAPI() { stop_server(); }

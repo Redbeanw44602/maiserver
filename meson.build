@@ -49,6 +49,7 @@ sources = files(
     'src/service/maimai-dx/home/home.cpp',
     'src/service/maimai-dx/home/rating_target_music.cpp',
     'src/service/maimai-dx/record/music_detail.cpp',
+    'src/service/maimai-dx/reverse_proxy.cpp',
     'src/service/maimai-dx/session.cpp',
     'src/service/qrcode.cpp',
     'src/util/html_parser.cpp',
