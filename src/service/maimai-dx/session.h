@@ -9,14 +9,52 @@
 #include <cpr/cpr.h>
 
 #include "error.h"
+#include "log.h"
 
 namespace mai::service::session {
 
-std::expected<std::string, MaiError> simple_get(
-    std::string_view       url,
-    bool                   follow_redirect      = true,
-    const cpr::Parameters& parameters           = {},
-    bool                   force_refresh_cookie = false
-);
+namespace detail {
 
+void intercept(cpr::Session& session);
+void intercept(cpr::Response& response);
+
+} // namespace detail
+
+using cpr_method_t = decltype(&cpr::Session::Get);
+
+template <typename... Options>
+void request_later(cpr::Session& session, Options&&... opts) {
+    detail::intercept(session);
+    cpr::priv::set_option(session, std::forward<Options>(opts)...);
 }
+
+inline cpr::Response request(cpr_method_t method, cpr::Session& session) {
+    if (!method) {
+        DBG("warning! method is nullptr");
+        return {};
+    }
+    auto response = (session.*method)();
+    detail::intercept(response);
+    return response;
+}
+
+template <typename... Options>
+cpr::Response request(cpr_method_t method, Options&&... opts) {
+    cpr::Session session;
+    request_later(session, std::forward<Options>(opts)...);
+    return request(method, session);
+}
+
+/* Utility Function:
+ * GET the resource and return the response body. */
+template <typename... Options>
+std::expected<std::string, MaiError> get_text(Options&&... opts) {
+    auto response = request(&cpr::Session::Get, std::forward<Options>(opts)...);
+    if (response.status_code != 200) {
+        DBG("get text failed with status code: {}", response.status_code);
+        return std::unexpected(MaiError::EXPECT_OK);
+    }
+    return response.text;
+}
+
+} // namespace mai::service::session

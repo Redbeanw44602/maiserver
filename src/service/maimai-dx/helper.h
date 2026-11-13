@@ -18,7 +18,7 @@
 
 namespace mai::service {
 
-constexpr auto BROWSER_USER_AGENT =
+inline const cpr::UserAgent BROWSER_USER_AGENT =
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/144.0.0.0 Safari/537.36 NetType/WIFI "
     "MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63090a13) "
@@ -26,9 +26,10 @@ constexpr auto BROWSER_USER_AGENT =
 
 // clang-format off
 namespace url {
-constexpr auto HOME = "https://maimai.wahlap.com/maimai-mobile/home/";
-constexpr auto HOME_RATING_TARGET_MUSIC = "https://maimai.wahlap.com/maimai-mobile/home/ratingTargetMusic/";
-constexpr auto HOME_RECORD_MUSIC_DETAIL = "https://maimai.wahlap.com/maimai-mobile/record/musicDetail/";
+constexpr auto ORIGIN = "https://maimai.wahlap.com";
+inline const cpr::Url HOME = "https://maimai.wahlap.com/maimai-mobile/home/";
+inline const cpr::Url HOME_RATING_TARGET_MUSIC = "https://maimai.wahlap.com/maimai-mobile/home/ratingTargetMusic/";
+inline const cpr::Url HOME_RECORD_MUSIC_DETAIL = "https://maimai.wahlap.com/maimai-mobile/record/musicDetail/";
 }
 // clang-format on
 

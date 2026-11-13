@@ -52,6 +52,7 @@ adapter__get_record_detail(QueryArgs args) {
                             : std::unexpected(MaiError::MISSING_REQUIRED_ARG);
 }
 
+
 } // namespace
 
 BasicAPI::BasicAPI(std::string address, uint16_t port) {

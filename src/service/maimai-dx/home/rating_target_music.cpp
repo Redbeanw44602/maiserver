@@ -87,7 +87,7 @@ std::expected<RatingDetail, MaiError> parse(std::string&& html) {
 } // namespace
 
 std::expected<RatingDetail, MaiError> get_rating_detail() {
-    auto webpage = session::simple_get(url::HOME_RATING_TARGET_MUSIC);
+    auto webpage = session::get_text(url::HOME_RATING_TARGET_MUSIC);
     if (!webpage) {
         UNEXPECTED_WEBPAGE_WITH_ERR(webpage);
     }

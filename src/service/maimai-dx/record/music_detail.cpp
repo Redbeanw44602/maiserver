@@ -111,10 +111,9 @@ std::expected<RecordDetail, MaiError> parse(std::string&& html) {
 
 std::expected<RecordDetail, MaiError> get_record_detail(std::string id) {
     // clang-format off
-    auto webpage = session::simple_get(
+    auto webpage = session::get_text(
         url::HOME_RECORD_MUSIC_DETAIL,
-        true,
-        {{"idx", std::move(id)}}
+        cpr::Parameters{{"idx", std::move(id)}}
     );
     // clang-format on
     if (!webpage) {

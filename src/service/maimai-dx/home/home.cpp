@@ -69,7 +69,7 @@ std::expected<PlayerInformation, MaiError> parse(std::string&& html) {
 } // namespace
 
 std::expected<PlayerInformation, MaiError> get_player_information() {
-    auto webpage = session::simple_get(url::HOME);
+    auto webpage = session::get_text(url::HOME);
     if (!webpage) {
         UNEXPECTED_WEBPAGE_WITH_ERR(webpage);
     }
