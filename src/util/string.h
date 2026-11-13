@@ -107,7 +107,7 @@ inline std::expected<T, MaiError> to_numeric(std::string_view str)
     return ret;
 }
 
-inline std::string_view strip(std::string_view str) {
+inline std::string_view strip(std::string_view str, bool strip_nbsp = true) {
     size_t begin = 0;
     size_t end   = str.size();
 
@@ -116,7 +116,7 @@ inline std::string_view strip(std::string_view str) {
     while (begin < end) {
         if (std::isspace(static_cast<unsigned char>(str[begin]))) {
             ++begin;
-        } else if (str.compare(begin, 2, nbsp) == 0) {
+        } else if (strip_nbsp && str.compare(begin, 2, nbsp) == 0) {
             begin += 2;
         } else {
             break;
@@ -126,7 +126,9 @@ inline std::string_view strip(std::string_view str) {
     while (begin < end) {
         if (std::isspace(static_cast<unsigned char>(str[end - 1]))) {
             --end;
-        } else if (end - begin >= 2 && str.compare(end - 2, 2, nbsp) == 0) {
+        } else if (
+            strip_nbsp && end - begin >= 2 && str.compare(end - 2, 2, nbsp) == 0
+        ) {
             end -= 2;
         } else {
             break;
@@ -166,13 +168,29 @@ inline void remove_prefix(std::string_view& str, std::string_view pfx) {
     }
 }
 
-
 inline std::string_view
 remove_prefix_r(std::string_view str, std::string_view pfx) {
     if (str.starts_with(pfx)) {
         str.remove_prefix(pfx.size());
     }
     return str;
+}
+
+inline std::string lower(std::string str) {
+    for (char& c : str)
+        if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
+    return str;
+}
+
+inline void
+replace_all(std::string& str, std::string_view from, std::string_view to) {
+    if (from.empty()) return;
+
+    std::size_t pos = 0;
+    while ((pos = str.find(from, pos)) != std::string::npos) {
+        str.replace(pos, from.size(), to);
+        pos += to.size();
+    }
 }
 
 } // namespace mai::util::string
