@@ -75,7 +75,7 @@ Headers parse_headers(std::string_view raw_text) {
             if (auto pos = line.find(':'); pos != line.npos) {
                 result.emplace(
                     line.substr(0, pos),
-                    string::strip(line.substr(pos + 1))
+                    string::strip(line.substr(pos + 1), false)
                 );
             }
         }

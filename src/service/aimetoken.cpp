@@ -146,10 +146,14 @@ get_oauth_callback_url(std::string_view url) {
         return std::unexpected(oauth_request_or_err.error());
     }
 
-    auto oauth_request = *oauth_request_or_err;
-    auto wpkg_header   = build_wpkg_header(g_uin, g_cloud_proxy_session_info);
-    auto total_size    = oauth_request.size() + wpkg_header.size()
-                       + CLOUD_PROXY_SHORTCONN_HEADER_SIZE;
+    auto              oauth_request = *oauth_request_or_err;
+    std::vector<char> wpkg_header;
+    {
+        std::shared_lock lock(g_cloud_proxy_session_info_lock);
+        wpkg_header = build_wpkg_header(g_uin, g_cloud_proxy_session_info);
+    }
+    auto total_size = oauth_request.size() + wpkg_header.size()
+                    + CLOUD_PROXY_SHORTCONN_HEADER_SIZE;
     auto shortconn_header =
         build_shortconn_header(total_size, CLOUD_PROXY_TRANSFER_CMD_ID);
     DBG("built oauth request ({}) {}",
@@ -220,8 +224,7 @@ AimeTokenOrErr get_aimetoken(std::string_view service_name) {
 
     auto oauth_url = cpr::Get(
         cpr::Url{std::format("{}/{}", TGK_WCAIME_OAUTH_URL, service_name)},
-        cpr::Redirect{false},
-        cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0}
+        cpr::Redirect{false}
 #if MAI_DEBUG
         ,
         cpr::Verbose{true}
@@ -240,12 +243,15 @@ AimeTokenOrErr get_aimetoken(std::string_view service_name) {
     }
 
     DBG("ok, start getting cloud_proxy_session_info");
-    if (g_cloud_proxy_session_info.empty()) {
-        if (auto session_info = cloud_proxy::auth()) {
-            DBG("got valid session info {}", string::hex(*session_info));
-            g_cloud_proxy_session_info = *session_info;
-        } else {
-            return std::unexpected(session_info.error());
+    {
+        std::unique_lock lock(g_cloud_proxy_session_info_lock);
+        if (g_cloud_proxy_session_info.empty()) {
+            if (auto session_info = cloud_proxy::auth()) {
+                DBG("got valid session info {}", string::hex(*session_info));
+                g_cloud_proxy_session_info = *session_info;
+            } else {
+                return std::unexpected(session_info.error());
+            }
         }
     }
 
@@ -257,11 +263,7 @@ AimeTokenOrErr get_aimetoken(std::string_view service_name) {
 
     DBG("server responses valid callback_url = {}, now send request",
         *url_or_err);
-    auto callback_url = cpr::Get(
-        cpr::Url{*url_or_err},
-        cpr::Redirect{false},
-        cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0}
-    );
+    auto callback_url = cpr::Get(cpr::Url{*url_or_err}, cpr::Redirect{false});
     DBG("wahlap responses, status = {}, text = {}",
         callback_url.status_code,
         callback_url.text);

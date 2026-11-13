@@ -64,6 +64,7 @@ BasicAPI::BasicAPI(std::string address, uint16_t port) {
 
     server_.config.address          = std::move(address);
     server_.config.port             = port;
+    server_.config.thread_pool_size = 8;
     server_.default_resource["GET"] = [](auto response, auto _) {
         return response->write(SimpleWeb::StatusCode::client_error_not_found);
     };

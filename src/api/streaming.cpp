@@ -48,7 +48,7 @@ void on_message(
     // }
 
     using cmd_callback_t = std::function<void(std::string_view, WsSender&)>;
-    static std::unordered_map<std::string_view, cmd_callback_t> commands = {
+    static const std::unordered_map<std::string_view, cmd_callback_t> cmds = {
         {"/auth/qrcode", cmd_qrcode}
     };
 
@@ -61,7 +61,7 @@ void on_message(
             auto echo = incoming["echo"].get<uint32_t>();
             send.echo(echo);
         }
-        if (auto it = commands.find(path); it != commands.end()) {
+        if (auto it = cmds.find(path); it != cmds.end()) {
             it->second(path, send);
         } else {
             send(MaiError::COMMAND_NOT_FOUND);

@@ -6,16 +6,25 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstdint>
+#include <shared_mutex>
 #include <string>
 
 namespace mai {
 
 inline namespace shared_variables {
 
-inline uint32_t    g_uin{0};
+// RACE: May be set multiple times.
+inline std::atomic<uint32_t> g_uin{0};
+
+// RACE: Set once, but cannot be predicted, related to
+// `g_cloud_proxy_device_id`.
+inline std::string       g_cloud_proxy_session_info;
+inline std::shared_mutex g_cloud_proxy_session_info_lock;
+
+// NO RACE: Guarantees that it is set only once, at startup.
 inline std::string g_cloud_proxy_device_id;
-inline std::string g_cloud_proxy_session_info;
 inline bool        g_slim{false};
 
 } // namespace shared_variables
