@@ -67,6 +67,7 @@ void intercept(cpr::Session& session) {
         }
     }
     session.SetUserAgent(BROWSER_USER_AGENT);
+    // Copied; libcpr internally encodes and sets CURLOPT_COOKIE.
     session.SetCookies(cookies_);
     session.SetConnectionPool(pool_);
 #if MAI_LOG_VERBOSE

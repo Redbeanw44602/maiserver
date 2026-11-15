@@ -151,9 +151,9 @@ void forward(
 
     auto upstream_status_code = static_cast<status_code>(upstream.status_code);
     // Simple-Web-Server cannot recognize non-standard HTTP status codes
-    // 567: Bloced by Tencent Cloud EdgeOne
-    if (upstream.status_code == 567) {
-        upstream_status_code = status_code::server_error_bad_gateway;
+    // 520 ~ 600: Reserved by EdgeOne, see https://edgeone.ai/zh/document/58009
+    if (upstream.status_code >= 520 && upstream.status_code < 600) {
+        upstream_status_code = status_code::client_error_too_many_requests;
     }
 
     auto upstream_headers = parse_headers(upstream.raw_header);
