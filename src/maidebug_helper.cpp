@@ -31,7 +31,7 @@ HOOK_DELAYED(
     const LLVMString& content,
     void*             callback
 ) {
-    DBG("send_cloud_proxy_transfer_request, task_id = {}, content = {}",
+    DBV("send_cloud_proxy_transfer_request, task_id = {}, content = {}",
         task_id,
         content.view());
     std::expected<std::string, MaiError> protobuf;
@@ -45,10 +45,10 @@ HOOK_DELAYED(
         ([&]() {
             constexpr auto Key = Keys + 1;
             if (auto uint64 = header.get_uint64<Key>()) {
-                DBG("wpkg: {} -> {}", Key, *uint64);
+                DBV("wpkg: {} -> {}", Key, *uint64);
             }
             if (auto string = header.get_string<Key>()) {
-                DBG("wpkg: {} -> '{}' or '{}'", Key, *string, string::hex(*string));
+                DBV("wpkg: {} -> '{}' or '{}'", Key, *string, string::hex(*string));
             }
         }(), ...);
     };
@@ -72,7 +72,7 @@ HOOK_DELAYED(
         DBG("failed to parse request {}!", task_id);
         goto RETURN;
     }
-    DBG("parsed request {}\n{}", task_id, request.DebugString());
+    DBV("parsed request {}\n{}", task_id, request.DebugString());
     if (!request.has_cmd_id()
         || request.cmd_id() != CLOUD_PROXY_TRANSFER_CMD_ID) {
         goto RETURN;
@@ -82,14 +82,14 @@ HOOK_DELAYED(
         DBG("illegal request?");
         goto RETURN;
     }
-    DBG("parsed shortconn header {}",
+    DBV("parsed shortconn header {}",
         string::hex(req_span.first(CLOUD_PROXY_SHORTCONN_HEADER_SIZE)));
     req_span = req_span.subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE);
     if (header.deserialize(req_span) != 0 || header.size() > req_span.size()) {
         DBG("failed to parse wpkg header.");
         goto RETURN;
     }
-    DBG("parsed wpkg header {}", string::hex(req_span.first(header.size())));
+    DBV("parsed wpkg header {}", string::hex(req_span.first(header.size())));
     iterate_wpkg(std::make_integer_sequence<uint32_t, 64>{}, header);
     req_span          = req_span.subspan(header.size()); // LZ compressed proto
     decompressed_size = LZ4_decompress_safe(
@@ -103,7 +103,7 @@ HOOK_DELAYED(
         goto RETURN;
     }
     decompressed_proto.resize(decompressed_size);
-    DBG("parsed decompressed proto {}", string::hex(decompressed_proto));
+    DBV("parsed decompressed proto {}", string::hex(decompressed_proto));
 RETURN:
     return origin(a1, task_id, content, callback);
 }

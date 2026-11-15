@@ -151,7 +151,7 @@ PayloadOrErr transfer(
         || response.payload().size() < CLOUD_PROXY_SHORTCONN_HEADER_SIZE) {
         return std::unexpected(MaiError::ILLEGAL_RESPONSE);
     }
-    DBG("got cloud proxy transfer response {}",
+    DBV("got cloud proxy transfer response {}",
         string::hex(
             std::span(response.payload())
                 .subspan(CLOUD_PROXY_SHORTCONN_HEADER_SIZE)
@@ -169,7 +169,7 @@ HOOK_DELAYED(
     const LLVMString& content
 ) {
     using namespace async_wrapper::cloud_proxy;
-    DBG("run_cloud_proxy_callback, task_id = {}, content = {}",
+    DBV("run_cloud_proxy_callback, task_id = {}, content = {}",
         task_id,
         content.view());
     {

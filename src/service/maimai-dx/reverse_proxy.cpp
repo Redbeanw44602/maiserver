@@ -169,7 +169,7 @@ void forward(
             ++it;
         }
     }
-    DBG("upstream status_code = {}, raw_headers = \n'{}'",
+    DBV("upstream status_code = {}, raw_headers = \n'{}'",
         static_cast<uint32_t>(upstream_status_code),
         upstream.raw_header);
 

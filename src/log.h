@@ -42,3 +42,14 @@ void print_debug_string(
 #else
 #define DBG(...) ((void)0)
 #endif
+
+#if MAI_LOG_VERBOSE
+#define DBV(...)                                                               \
+    mai::detail::print_debug_string(                                           \
+        std::source_location::current(),                                       \
+        __FUNCTION__,                                                          \
+        __VA_ARGS__                                                            \
+    )
+#else
+#define DBV(...) ((void)0)
+#endif

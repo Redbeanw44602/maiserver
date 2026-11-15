@@ -23,8 +23,8 @@ static thread_local cpr::ConnectionPool pool_;
 void update_cookies(cpr::Cookies&& cookies) {
     cookies_        = std::move(cookies);
     cookies_.encode = false;
-    for (const auto& cookie : cookies_) {
-        DBG("UPDATE COOKIE: '{}': '{}'", cookie.GetName(), cookie.GetValue());
+    for ([[maybe_unused]] const auto& cookie : cookies_) {
+        DBV("UPDATE COOKIE: '{}': '{}'", cookie.GetName(), cookie.GetValue());
     }
 }
 
@@ -36,7 +36,7 @@ std::expected<void, MaiError> login() {
     auto response = cpr::Get(
         cpr::Url{token->url},
         cpr::Redirect{false},
-#if MAI_DEBUG
+#if MAI_LOG_VERBOSE
         cpr::Verbose{true},
 #endif
         pool_,
@@ -69,7 +69,7 @@ void intercept(cpr::Session& session) {
     session.SetUserAgent(BROWSER_USER_AGENT);
     session.SetCookies(cookies_);
     session.SetConnectionPool(pool_);
-#if MAI_DEBUG
+#if MAI_LOG_VERBOSE
     session.SetVerbose(cpr::Verbose{true});
 #endif
 }

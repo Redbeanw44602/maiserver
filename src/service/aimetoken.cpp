@@ -156,13 +156,13 @@ get_oauth_callback_url(std::string_view url) {
                     + CLOUD_PROXY_SHORTCONN_HEADER_SIZE;
     auto shortconn_header =
         build_shortconn_header(total_size, CLOUD_PROXY_TRANSFER_CMD_ID);
-    DBG("built oauth request ({}) {}",
+    DBV("built oauth request ({}) {}",
         oauth_request_or_err->size(),
         string::hex(*oauth_request_or_err));
-    DBG("built wpkg header ({}) {}",
+    DBV("built wpkg header ({}) {}",
         wpkg_header.size(),
         string::hex(wpkg_header));
-    DBG("built shortconn header ({}) {}",
+    DBV("built shortconn header ({}) {}",
         shortconn_header.size(),
         string::hex(shortconn_header));
 
@@ -203,7 +203,7 @@ get_oauth_callback_url(std::string_view url) {
         DBG("lz4 decompress failed, result = {}", decompressed_size);
         return std::unexpected(MaiError::FAILED_TO_DECOMPRESS_RESPONSE);
     }
-    DBG("decompressed oauth response {}", string::hex(decompressed_proto));
+    DBV("decompressed oauth response {}", string::hex(decompressed_proto));
 
     OAuthAuthorizeResponse oauth_response;
     if (!oauth_response.ParseFromString(decompressed_proto)) {
@@ -225,7 +225,7 @@ AimeTokenOrErr get_aimetoken(std::string_view service_name) {
     auto oauth_url = cpr::Get(
         cpr::Url{std::format("{}/{}", TGK_WCAIME_OAUTH_URL, service_name)},
         cpr::Redirect{false}
-#if MAI_DEBUG
+#if MAI_LOG_VERBOSE
         ,
         cpr::Verbose{true}
 #endif
