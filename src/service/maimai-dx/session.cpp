@@ -33,6 +33,7 @@ std::expected<void, MaiError> login() {
     if (!token) {
         return std::unexpected(token.error());
     }
+    rate_limiter::acquire(token->url);
     auto response = cpr::Get(
         cpr::Url{token->url},
         cpr::Redirect{false},

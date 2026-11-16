@@ -10,6 +10,7 @@
 
 #include "error.h"
 #include "log.h"
+#include "service/maimai-dx/rate_limiter.h"
 
 namespace mai::service::session {
 
@@ -22,10 +23,14 @@ void intercept(cpr::Response& response);
 
 using cpr_method_t = decltype(&cpr::Session::Get);
 
+/* This is just a workaround that allows you to operate `cpr::Session` on your
+ * own; if you don't send the request as soon as possible, it will interfere
+ * with the rate limiter's operation. */
 template <typename... Options>
 void request_later(cpr::Session& session, Options&&... opts) {
-    detail::intercept(session);
     cpr::priv::set_option(session, std::forward<Options>(opts)...);
+    rate_limiter::acquire(session.GetFullRequestUrl());
+    detail::intercept(session);
 }
 
 inline cpr::Response request(cpr_method_t method, cpr::Session& session) {
