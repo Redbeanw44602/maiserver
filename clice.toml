@@ -1,0 +1,5 @@
+[[rules]]
+patterns = [".conan2/**"]
+skip_function_body = true
+lint = false
+format = false
