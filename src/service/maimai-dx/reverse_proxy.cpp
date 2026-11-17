@@ -182,6 +182,7 @@ void forward(
             "var dir =  arrayL[0] + \"//\" + arrayL[2]",
             std::format("var dir = \"{}\"", path_prefix_)
         );
+        string::replace_all(upstream.text, "<body oncontextmenu=\"return false;\">", "<body>");
         response->write(upstream_status_code, upstream.text, upstream_headers);
     }
 }

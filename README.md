@@ -11,6 +11,7 @@ This is a WeChat (for Linux) plugin that converts the functions of the `舞萌|�
 - [Pros and Cons](#pros-and-cons)
 - [API Endpoints](#api-endpoints)
   - [Basic](#basic)
+  - [Basic (ReverseProxy)](#basic-reverseproxy)
   - [Basic (HTMLparser)](#basic-htmlparser)
   - [Streaming](#streaming)
 - [Installation](#installation)
@@ -100,16 +101,15 @@ This API shares a timeout timer with the corresponding Streaming API, which mean
 ```
 
 > [!NOTE]
-> **Important Notes Regarding Authorized URLs**
-> 1. The client must support HTTP/2.
-> 2. The browser's `User-Agent` must be set; otherwise, you will be blocked by TencentCloud EdgeOne for 30 minutes. 😅
-> 3. Once a new session begins (by accessing an authorized URL and receiving a successful response), the old session will immediately expire.
+> [Partial WAF Rules for maimai DX NET (CN)](https://github.com/Redbeanw44602/maiserver/blob/fd7a57d346da5469e9de1e2cdf566c06c3c59b13/src/service/maimai-dx/rate_limiter.h#L15)
 
-User agent for WeChat 4.1.13.26 (WeChatAppEx 25806) on Linux
+### Basic (ReverseProxy)
 
-```
-Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63090a13) UnifiedPCLinuxWechat(0xf2741d1a) XWEB/25806 Flue
-```
+This API endpoint is equivalent to https://maimai.wahlap.com. If you want to access the home page, you can go to `/api/v1/maimai-dx/reverse-proxy/maimai-mobile/home/`. The reverse proxy server acting as an intermediary to automatically set the appropriate user agent, complete WeChat OAuth authentication, remove copy restrictions from the page, and schedule requests based on quotas (in progress).
+
+ - `/api/v1/maimai-dx/reverse-proxy`
+
+<img width="777" height="456" alt="image" src="https://github.com/user-attachments/assets/35c5675f-9941-4db9-92a9-5213757e62d5" />
 
 ### Basic (HTMLparser)
 
